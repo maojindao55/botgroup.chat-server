@@ -3,3 +3,160 @@ server:
 
 database:
   dsn: "memory" 
+
+llm_providers:
+   aliyun: 
+     apikey: "DASHSCOPE_API_KEY"
+     baseurl: "https://dashscope.aliyuncs.com/compatible-mode/v1/"
+   huoshan:
+     apikey: "ARK_API_KEY"
+     baseurl: "https://ark.cn-beijing.volces.com/api/v3/"
+   tencent:
+     apikey: "HUNYUAN_API_KEY1"
+     baseurl: "https://api.hunyuan.cloud.tencent.com/v1/"
+   zhipuai:
+     apikey: "GLM_API_KEY"
+     baseurl: "https://open.bigmodel.cn/api/paas/v4/"
+   baidu:
+     apikey: "BAIDU_API_KEY"
+     baseurl: "https://qianfan.baidubce.com/v2/"
+   deepseek:
+     apikey: "DEEPSEEK_API_KEY"
+     baseurl: "https://api.deepseek.com/v1/"
+   moonshot:
+     apikey: "KIMI_API_KEY"
+     baseurl: "https://api.moonshot.cn/v1/"
+
+
+llm_models:
+    qwen-plus: "aliyun"
+    qwen-turbo: "aliyun"
+    deepseek-v3-241226: "huoshan"
+    doubao-1-5-lite-32k-250115: "huoshan"
+    ep-20250306223646-szzkw: "huoshan"
+    hunyuan-turbos-latest: "tencent"
+    glm-4-plus: "zhipuai"
+    deepseek-chat: "deepseek"
+    moonshot-v1-8k: "moonshot"
+    ernie-3__5-128k: "baidu"
+
+llm_characters:
+  - id: "ai0"
+    name: "调度器"
+    personality: "sheduler"
+    model: "qwen-plus"
+    avatar: ""
+    custom_prompt: '你是一个群聊总结分析专家，你在一个聊天群里，请分析群用户消息和上文群聊内容
+      1、只能从给定的标签列表中选择最相关的标签，可选标签：${allTags}。
+      2、请只返回标签列表，用逗号分隔，不要有其他解释, 不要有任何前缀。
+      3、回复格式示例：文字游戏, 聊天, 新闻报道'
+  
+  - id: "ai4"
+    name: "元宝"
+    personality: "yuanbao"
+    model: "deepseek-v3-241226"
+    avatar: "/img/yuanbao.png"
+    custom_prompt: '你是一个名叫"元宝"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "聊天"
+      - "新闻报道"
+      - "文字游戏"
+      - "娱乐"
+      - "信息总结"
+  
+  - id: "ai5"
+    name: "豆包"
+    personality: "doubao"
+    model: "doubao-1-5-lite-32k-250115"
+    avatar: "/img/doubao_new.png"
+    custom_prompt: '你是一个名叫"豆包"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "聊天"
+      - "文字游戏"
+      - "学生"
+      - "娱乐"
+  
+  - id: "ai6"
+    name: "千问"
+    personality: "qianwen"
+    model: "qwen-plus"
+    avatar: "/img/qwen.jpg"
+    custom_prompt: '你是一个名叫"千问"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "广告文案"
+      - "分析数据"
+      - "文字游戏"
+      - "信息总结"
+      - "聊天"
+  
+  - id: "ai7"
+    name: "DeepSeek"
+    personality: "deepseek-V3"
+    model: "qwen-turbo"
+    avatar: "/img/ds.svg"
+    custom_prompt: '你是一个名叫"DeepSeek"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "深度推理"
+      - "编程"
+      - "文字游戏"
+      - "数学"
+      - "信息总结"
+      - "聊天"
+  
+  - id: "ai8"
+    name: "智谱"
+    personality: "glm"
+    model: "glm-4-plus"
+    avatar: "/img/glm.gif"
+    custom_prompt: '你是一个名叫"智谱"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "深度推理"
+      - "数学"
+      - "信息总结"
+      - "分析数据"
+      - "文字游戏"
+      - "聊天"
+  
+  - id: "ai9"
+    name: "Kimi"
+    personality: "kimi"
+    model: "moonshot-v1-8k"
+    avatar: "/img/kimi.jpg"
+    custom_prompt: '你是一个名叫"Kimi"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "深度推理"
+      - "数学"
+      - "信息总结"
+      - "分析数据"
+      - "文字游戏"
+      - "聊天"
+  
+  - id: "ai10"
+    name: "文小言"
+    personality: "baidu"
+    model: "ernie-3__5-128k"
+    avatar: "/img/baidu.svg"
+    custom_prompt: '你是一个名叫"文心一言"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    tags:
+      - "深度推理"
+      - "数学"
+      - "信息总结"
+      - "分析数据"
+      - "文字游戏"
+      - "聊天"
+
+llm_groups:
+  - id: "group1"
+    name: "🔥硅碳生命体交流群"
+    description: "群消息关注度权重：\"user\"的最新消息>其他成员最新消息>\"user\"的历史消息>其他成员历史消息>"
+    members: 
+      - "ai0"
+      - "ai4"
+      - "ai5"
+      - "ai6"
+      - "ai7"
+      - "ai8"
+      - "ai9"
+      - "ai10"
+    isGroupDiscussionMode: true
+  

@@ -8,6 +8,8 @@ import (
 type ChatMessage struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	UserID    string    `json:"user_id"`
+	Role      string    `json:"role"`
+	Name      string    `json:"name"`
 	Content   string    `json:"content"`
 	Timestamp time.Time `json:"timestamp"`
 }

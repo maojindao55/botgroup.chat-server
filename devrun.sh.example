@@ -1,0 +1,9 @@
+#!/bin/bash
+export DASHSCOPE_API_KEY=your_aliyun_api_key
+export ARK_API_KEY=your_huoshan_api_key
+export HUNYUAN_API_KEY1=your_tencent_api_key
+export GLM_API_KEY=your_zhipuai_api_key
+export BAIDU_API_KEY=your_baidu_api_key
+export DEEPSEEK_API_KEY=your_deepseek_api_key
+export KIMI_API_KEY=your_moonshot_api_key
+go run main.go

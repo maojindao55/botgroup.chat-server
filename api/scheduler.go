@@ -1,67 +1,53 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"project/config"
 	"project/models"
 	"project/services"
 )
 
-// SchedulerRequest 调度请求结构
-type SchedulerRequest struct {
-	TaskName    string `json:"task_name" binding:"required"`
-	Description string `json:"description"`
-	CronExpr    string `json:"cron_expr" binding:"required"`
+// ScheduleRequest 调度请求结构
+type ScheduleRequest struct {
+	Message      string                 `json:"message" binding:"required"`
+	History      []models.ChatMessage   `json:"history"`
+	AvailableAIs []*config.LLMCharacter `json:"availableAIs" binding:"required"`
 }
 
-// SchedulerHandler 处理调度任务创建请求
+// ScheduleResponse 调度响应结构
+type ScheduleResponse struct {
+	SelectedAIs []string `json:"selectedAIs"`
+}
+
+// SchedulerHandler 处理AI调度请求
 func SchedulerHandler(c *gin.Context) {
-	var req SchedulerRequest
+	var req ScheduleRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("调度请求参数无效: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "请求参数无效",
 		})
 		return
 	}
 
-	// 调用服务层处理业务逻辑
+	// 调用调度服务
 	schedulerService := services.NewSchedulerService()
-	task := models.Task{
-		Name:        req.TaskName,
-		Description: req.Description,
-		CronExpr:    req.CronExpr,
-	}
+	selectedAIs, err := schedulerService.ScheduleAIResponses(req.Message, req.History, req.AvailableAIs)
 
-	id, err := schedulerService.CreateTask(task)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "创建任务失败",
+			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"task_id": id,
-		"message": "任务创建成功",
-	})
-}
-
-// GetSchedulerHandler 获取调度任务列表
-func GetSchedulerHandler(c *gin.Context) {
-	schedulerService := services.NewSchedulerService()
-	tasks, err := schedulerService.GetAllTasks()
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "获取任务列表失败",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"tasks": tasks,
+	// 返回选中的AI列表
+	c.JSON(http.StatusOK, ScheduleResponse{
+		SelectedAIs: selectedAIs,
 	})
 }
