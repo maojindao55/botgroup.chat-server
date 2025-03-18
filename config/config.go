@@ -16,22 +16,22 @@ type LLMProvider struct {
 
 // LLMGroup 定义LLM组的配置结构
 type LLMGroup struct {
-	ID                    string
-	Name                  string
-	Description           string
-	Members               []string
-	IsGroupDiscussionMode bool
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	Members               []string `json:"members"`
+	IsGroupDiscussionMode bool     `json:"isGroupDiscussionMode"`
 }
 
 // LLMCharacter 定义LLM角色的配置结构
 type LLMCharacter struct {
-	ID           string
-	Name         string
-	Personality  string
-	Model        string
-	Avatar       string
-	CustomPrompt string
-	Tags         []string
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Personality  string   `json:"personality"`
+	Model        string   `json:"model"`
+	Avatar       string   `json:"avatar"`
+	CustomPrompt string   `mapstructure:"custom_prompt" json:"custom_prompt"`
+	Tags         []string `json:"tags"`
 }
 
 // Config 应用配置结构

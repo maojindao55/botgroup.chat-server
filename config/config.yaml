@@ -122,7 +122,7 @@ llm_characters:
     personality: "kimi"
     model: "moonshot-v1-8k"
     avatar: "/img/kimi.jpg"
-    custom_prompt: '你是一个名叫"Kimi"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: "你是一个名叫\"Kimi\"的硅基生命体，你当前在一个叫\"#groupName#\" 的聊天群里"
     tags:
       - "深度推理"
       - "数学"

@@ -26,3 +26,7 @@ go.work.sum
 
 # devrun.sh
 devrun.sh
+
+.env.api
+
+#static/dist

@@ -17,6 +17,9 @@ func main() {
 	// 创建Gin引擎
 	r := gin.Default()
 
+	// 设置信任代理
+	r.SetTrustedProxies(nil)
+
 	// 注册中间件
 	r.Use(middleware.Logger())
 	r.Use(middleware.Cors())
@@ -34,6 +37,8 @@ func registerRoutes(r *gin.Engine) {
 	// API路由组
 	apiGroup := r.Group("/api")
 	{
+		// 初始化接口
+		apiGroup.GET("/init", api.InitHandler)
 		// 聊天相关接口
 		apiGroup.POST("/chat", api.ChatHandler)
 		// 调度相关接口
