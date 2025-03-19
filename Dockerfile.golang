@@ -2,6 +2,9 @@ FROM registry.cn-hangzhou.aliyuncs.com/eryajf/golang:1.21.9-alpine3.19
 
 WORKDIR /app
 
+# 设置国内 Go 代理
+ENV GOPROXY=https://goproxy.cn,direct
+
 COPY go.mod go.sum ./
 RUN go mod download
 
