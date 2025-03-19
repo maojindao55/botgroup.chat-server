@@ -4,7 +4,7 @@ services:
   nginx:
     image: registry.openanolis.cn/openanolis/nginx:1.14.1-8.6
     ports:
-      - "82:80"
+      - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
