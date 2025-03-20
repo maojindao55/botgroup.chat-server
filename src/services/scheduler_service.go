@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"sort"
@@ -166,11 +165,8 @@ func (s *schedulerService) analyzeMessageWithAI(message string, allTags []string
 
 	// 构建提示词
 	prompt := schedulerAIConfig.CustomPrompt
-	if prompt == "" {
-		// 构建默认提示词
-		tagsStr := strings.Join(allTags, ", ")
-		prompt = fmt.Sprintf("分析以下消息，并从这些标签中选择最相关的标签: %s。请以逗号分隔的形式返回标签，不要添加其他内容。", tagsStr)
-	}
+	tagsStr := strings.Join(allTags, ", ")
+	prompt = strings.ReplaceAll(prompt, "#allTags#", tagsStr)
 
 	// 构建消息数组
 	messages := []openai.ChatCompletionMessage{

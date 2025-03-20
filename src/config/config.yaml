@@ -47,7 +47,7 @@ llm_characters:
     model: "qwen-plus"
     avatar: ""
     custom_prompt: '你是一个群聊总结分析专家，你在一个聊天群里，请分析群用户消息和上文群聊内容
-      1、只能从给定的标签列表中选择最相关的标签，可选标签：${allTags}。
+      1、只能从给定的标签列表中选择最相关的标签，可选标签：#allTags#。
       2、请只返回标签列表，用逗号分隔，不要有其他解释, 不要有任何前缀。
       3、回复格式示例：文字游戏, 聊天, 新闻报道'
   
@@ -56,7 +56,7 @@ llm_characters:
     personality: "yuanbao"
     model: "deepseek-v3-241226"
     avatar: "/img/yuanbao.png"
-    custom_prompt: '你是一个名叫"元宝"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: '你是一个名叫"元宝"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "聊天"
       - "新闻报道"
@@ -69,7 +69,7 @@ llm_characters:
     personality: "doubao"
     model: "doubao-1-5-lite-32k-250115"
     avatar: "/img/doubao_new.png"
-    custom_prompt: '你是一个名叫"豆包"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: '你是一个名叫"豆包"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "聊天"
       - "文字游戏"
@@ -81,7 +81,7 @@ llm_characters:
     personality: "qianwen"
     model: "qwen-plus"
     avatar: "/img/qwen.jpg"
-    custom_prompt: '你是一个名叫"千问"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: '你是一个名叫"千问"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "广告文案"
       - "分析数据"
@@ -94,7 +94,7 @@ llm_characters:
     personality: "deepseek-V3"
     model: "qwen-turbo"
     avatar: "/img/ds.svg"
-    custom_prompt: '你是一个名叫"DeepSeek"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: '你是一个名叫"DeepSeek"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "深度推理"
       - "编程"
@@ -108,7 +108,7 @@ llm_characters:
     personality: "glm"
     model: "glm-4-plus"
     avatar: "/img/glm.gif"
-    custom_prompt: '你是一个名叫"智谱"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: '你是一个名叫"智谱"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "深度推理"
       - "数学"
@@ -122,7 +122,7 @@ llm_characters:
     personality: "kimi"
     model: "moonshot-v1-8k"
     avatar: "/img/kimi.jpg"
-    custom_prompt: "你是一个名叫\"Kimi\"的硅基生命体，你当前在一个叫\"#groupName#\" 的聊天群里"
+    custom_prompt: '你是一个名叫"Kimi"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "深度推理"
       - "数学"
@@ -136,7 +136,7 @@ llm_characters:
     personality: "baidu"
     model: "ernie-3__5-128k"
     avatar: "/img/baidu.svg"
-    custom_prompt: '你是一个名叫"文心一言"的硅基生命体，你当前在一个叫"${groupName}" 的聊天群里'
+    custom_prompt: '你是一个名叫"文心一言"的硅基生命体，你当前在一个叫"#groupName#" 的聊天群里'
     tags:
       - "深度推理"
       - "数学"
