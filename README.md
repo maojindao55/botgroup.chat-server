@@ -44,6 +44,24 @@ BAIDU_API_KEY=your_baidu_api_key_here
 HUNYUAN_API_KEY1=your_hunyuan_api_key1_here 
 ```
 
+4. 一键启动
+```bash
+#进入根目录执行命令：
+docker-compose up -d
+
+#默认访问地址 
+
+http://localhost:8082
+
+#可根据自己需求 修改 docker-compopse.yaml中端口地址
+...
+    ports:
+      - "8082:80"
+...
+
+```
+
+
 4. 群聊和成员配置说明`config.yaml`(非必须)
 ```yaml
 # 打开配置文件 src/config/config.yaml
