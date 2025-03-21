@@ -202,4 +202,10 @@ func LoadConfig() {
 			delete(AppConfig.LLMModels, modelName)
 		}
 	}
+	// 处理角色model中的特殊字符
+	for _, character := range AppConfig.LLMCharacters {
+		if newCharacterModel := strings.Replace(character.Model, "__", ".", 1); newCharacterModel != character.Model {
+			character.Model = newCharacterModel
+		}
+	}
 }
