@@ -53,12 +53,12 @@ func (s *chatService) ProcessMessageStream(message models.ChatMessage, req ChatR
 	//根据res.model选择不同的模型的apikey， 需要判断是否存在
 	provider := config.AppConfig.LLMModels[req.Model]
 	if provider == "" {
-		return errors.New("model not found")
+		return errors.New("model not found:" + req.Model)
 	}
 	apiKey := config.AppConfig.LLMProviders[provider].APIKey
 	baseURL := config.AppConfig.LLMProviders[provider].BaseURL
 	if apiKey == "" || baseURL == "" {
-		return errors.New("api key is empty")
+		return errors.New("api key is empty, model:" + req.Model)
 	}
 
 	// 创建 sashabaranov/go-openai 客户端
