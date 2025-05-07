@@ -70,7 +70,7 @@ func (s *chatService) ProcessMessageStream(message models.ChatMessage, req ChatR
 	systemPrompt := ""
 	if req.CustomPrompt != "" {
 		//替换#name#
-		llmSystemPrompt := strings.Replace(req.CustomPrompt, "#name#", req.AIName, -1)
+		llmSystemPrompt := strings.Replace(config.AppConfig.LLMSystemPrompt, "#name#", req.AIName, -1)
 		systemPrompt = req.CustomPrompt + "\n" + llmSystemPrompt
 	}
 
