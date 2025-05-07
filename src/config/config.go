@@ -42,10 +42,11 @@ type Config struct {
 	Database struct {
 		DSN string
 	}
-	LLMProviders  map[string]LLMProvider `mapstructure:"llm_providers"`
-	LLMModels     map[string]string      `mapstructure:"llm_models"`
-	LLMGroups     []*LLMGroup            `mapstructure:"llm_groups"`
-	LLMCharacters []*LLMCharacter        `mapstructure:"llm_characters"`
+	LLMSystemPrompt string                 `mapstructure:"llm_system_prompt" json:"llm_system_prompt"`
+	LLMProviders    map[string]LLMProvider `mapstructure:"llm_providers"`
+	LLMModels       map[string]string      `mapstructure:"llm_models"`
+	LLMGroups       []*LLMGroup            `mapstructure:"llm_groups"`
+	LLMCharacters   []*LLMCharacter        `mapstructure:"llm_characters"`
 }
 
 var AppConfig Config
@@ -88,6 +89,11 @@ func LoadConfig() {
 		} else {
 			log.Println("无法找到llm_models配置")
 		}
+	}
+
+	if AppConfig.LLMSystemPrompt == "" {
+		AppConfig.LLMSystemPrompt = viper.GetString("llm_system_prompt")
+		log.Println("手动加载LLMSystemPrompt成功:", AppConfig.LLMSystemPrompt)
 	}
 
 	// 加载LLMCharacters

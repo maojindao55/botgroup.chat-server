@@ -10,6 +10,7 @@ import (
 	"project/config"
 	"project/models"
 	"project/repository"
+	"strings"
 	"time"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -62,13 +63,15 @@ func (s *chatService) ProcessMessageStream(message models.ChatMessage, req ChatR
 	}
 
 	// 创建 sashabaranov/go-openai 客户端
-	config := openai.DefaultConfig(apiKey)
-	config.BaseURL = baseURL
-	client := openai.NewClientWithConfig(config)
+	aconfig := openai.DefaultConfig(apiKey)
+	aconfig.BaseURL = baseURL
+	client := openai.NewClientWithConfig(aconfig)
 
 	systemPrompt := ""
 	if req.CustomPrompt != "" {
-		systemPrompt = req.CustomPrompt + "\n注意重要：1、你的名字是" + req.AIName + "，认准自己的身份；2、你的输出内容不要加" + req.AIName + "：这种多余前缀；3、如果用户提出玩游戏，比如成语接龙等，严格按照游戏规则，不要说一大堆，要简短精炼；4、保持群聊风格字数严格控制在50字以内，越简短越好（新闻总结类除外）"
+		//替换#name#
+		llmSystemPrompt := strings.Replace(req.CustomPrompt, "#name#", req.AIName, -1)
+		systemPrompt = req.CustomPrompt + "\n" + llmSystemPrompt
 	}
 
 	// 构建消息数组
