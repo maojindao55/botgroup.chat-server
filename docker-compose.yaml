@@ -11,6 +11,7 @@ services:
       - ./static:/usr/share/nginx/html
     depends_on:
       - golang-app
+      - rag-app
     networks:
       - app-network
 
@@ -22,6 +23,18 @@ services:
       - "8080"
     volumes:
       - ./src/config/config.yaml:/app/config/config.yaml
+    env_file:
+      - .env.api
+    networks:
+      - app-network
+    restart: always
+
+  rag-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.rag
+    expose:
+      - "8070"
     env_file:
       - .env.api
     networks:

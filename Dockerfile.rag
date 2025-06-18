@@ -1,0 +1,25 @@
+FROM --platform=linux/arm64/v8 swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/python:3.10-slim
+
+WORKDIR /app
+
+# 设置pip镜像源
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
+    && pip config set install.trusted-host mirrors.aliyun.com
+
+# 复制依赖文件
+COPY ./rag/requirements.txt .
+
+# 安装依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制应用代码
+COPY ./rag/ .
+
+# 创建数据目录
+RUN mkdir -p data
+
+# 暴露端口
+EXPOSE 8070
+
+# 启动命令
+CMD ["python", "api.py"] 
