@@ -32,6 +32,7 @@ type LLMCharacter struct {
 	Avatar       string   `json:"avatar"`
 	CustomPrompt string   `mapstructure:"custom_prompt" json:"custom_prompt"`
 	Tags         []string `json:"tags"`
+	RAG          bool     `json:"rag"`
 }
 
 // Config 应用配置结构

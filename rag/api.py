@@ -97,7 +97,7 @@ async def stream_generator(request: QueryRequest):
                     "问题: {query_str}\n"
                     "回答: "
                 )
-            
+            logger.debug(f"custom_qa_prompt: {custom_qa_prompt}")
             # 使用 LlamaIndex 的查询引擎进行流式查询
             query_engine = index.as_query_engine(
                 streaming=True,
