@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
             raise Exception("请设置 DASHSCOPE_API_KEY 环境变量")
         
         logger.info("开始初始化索引...")
-        index = create_index()
+        index = create_index('data/sample.txt')
         logger.info("索引初始化完成")
         
     except Exception as e:

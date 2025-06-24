@@ -84,10 +84,10 @@ def create_dashscope_llm(model_name: str = "qwen-max", temperature: float = 0.7)
         temperature=temperature
     )
 
-def create_index():
+def create_index(file_path: str):
     """创建文档索引"""
     # 加载文档
-    documents = SimpleDirectoryReader('data').load_data()
+    documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
     
     # 创建 DashScope LLM
     llm = create_dashscope_llm(temperature=0.7)
@@ -118,7 +118,7 @@ def main():
         return
 
     print("正在创建文档索引...")
-    index = create_index()
+    index = create_index('data/sample.txt')
     
     print("\n文档索引创建完成！现在你可以开始提问了。")
     print("输入 'quit' 退出程序")
