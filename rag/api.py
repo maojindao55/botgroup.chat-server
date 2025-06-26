@@ -22,25 +22,27 @@ logger.setLevel(logging.DEBUG)
 logging.getLogger("dashscope").setLevel(logging.WARNING)
 
 # 全局变量存储索引
-index = None
-
+index1 = None
+index2 = None
 class QueryRequest(BaseModel):
     query: str
     temperature: Optional[float] = 0.7
     model_name: Optional[str] = "qwen-max"
     custom_prompt: Optional[str] = None  # 允许用户自定义prompt
+    personality: Optional[str] = "qianwen"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时执行
-    global index
+    global index1, index2
     try:
         # 检查 API key
         if not os.getenv("DASHSCOPE_API_KEY"):
             raise Exception("请设置 DASHSCOPE_API_KEY 环境变量")
         
         logger.info("开始初始化索引...")
-        index = create_index('data/sample.txt')
+        index1 = create_index('data/OpenAI 官方提示工程指南.pdf')
+        index2 = create_index('data/GoogleAI提示工程指南.pdf')
         logger.info("索引初始化完成")
         
     except Exception as e:
@@ -60,6 +62,7 @@ app = FastAPI(
 
 async def stream_generator(request: QueryRequest):
     try:
+        global index1, index2
         logger.debug("开始执行RAG查询...")
         
         # 创建一个临时的 DashScope 实例，使用请求中的参数
@@ -98,8 +101,15 @@ async def stream_generator(request: QueryRequest):
                     "回答: "
                 )
             logger.debug(f"custom_qa_prompt: {custom_qa_prompt}")
+            
+            # 选择使用哪个索引
+            current_index = index2 if request.personality == "googleai" else index1
+            
+            if current_index is None:
+                raise Exception("索引未初始化")
+                
             # 使用 LlamaIndex 的查询引擎进行流式查询
-            query_engine = index.as_query_engine(
+            query_engine = current_index.as_query_engine(
                 streaming=True,
                 similarity_top_k=15,  # 增加检索的文档数量
                 response_mode="tree_summarize",  # 使用更好的响应模式
@@ -142,7 +152,7 @@ async def stream_generator(request: QueryRequest):
 
 @app.post("/rag/query")
 async def query_documents(request: QueryRequest):
-    if index is None:
+    if index1 is None or index2 is None:
         raise HTTPException(status_code=500, detail="索引未初始化")
     
     logger.info(f"收到查询请求: {request.query}, 模型: {request.model_name}, 温度: {request.temperature}")
