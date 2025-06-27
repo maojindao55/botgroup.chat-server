@@ -151,26 +151,31 @@ llm_characters:
     name: "OpenAI提示词专家"
     personality: "openai"
     rag: true
+    knowledge: "OpenAI 官方提示工程指南.pdf"
     model: "qwen-plus"
     avatar: "/img/qwen.jpg"
     custom_prompt: ""
+    
   - id: "ai12"
     name: "GooleAI提示词专家"
     personality: "googleai"
     rag: true
+    knowledge: "GoogleAI提示工程指南.pdf"
+    model: "qwen-plus"
+    avatar: "/img/qwen.jpg"
+    custom_prompt: ""
+
+  - id: "ai13"
+    name: "教练"
+    personality: "coach"
+    rag: true
+    knowledge: "高效能人士的执行4原则.docx"
     model: "qwen-plus"
     avatar: "/img/qwen.jpg"
     custom_prompt: ""
 
 
 llm_groups:
-  - id: "group0"
-    name: "高效能人士训练（知识库问答）"
-    description: ""
-    members: 
-      - "ai11"
-      - "ai12"
-    isGroupDiscussionMode: true
  
   - id: "group1"
     name: "🔥硅碳生命体交流群"
@@ -184,4 +189,20 @@ llm_groups:
       - "ai9"
       - "ai10"
     isGroupDiscussionMode: true
+
+  - id: "group2"
+    name: "知识库问答群"
+    description: ""
+    members: 
+      - "ai11"
+      - "ai12"
+    isGroupDiscussionMode: true
+
+  - id: "group3"
+    name: "知识库问答群"
+    description: ""
+    members: 
+      - "ai11"
+      - "ai12"
+    isGroupDiscussionMode: false
   

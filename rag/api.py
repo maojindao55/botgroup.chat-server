@@ -11,6 +11,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from llama_index.core import Settings
+import hashlib
 
 # 加载环境变量
 load_dotenv()
@@ -22,27 +23,34 @@ logger.setLevel(logging.DEBUG)
 logging.getLogger("dashscope").setLevel(logging.WARNING)
 
 # 全局变量存储索引
-index1 = None
-index2 = None
+indexes = {}
+
 class QueryRequest(BaseModel):
     query: str
     temperature: Optional[float] = 0.7
     model_name: Optional[str] = "qwen-max"
     custom_prompt: Optional[str] = None  # 允许用户自定义prompt
     personality: Optional[str] = "qianwen"
+    knowledge: Optional[str] = ""
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时执行
-    global index1, index2
+    global indexes
     try:
         # 检查 API key
         if not os.getenv("DASHSCOPE_API_KEY"):
             raise Exception("请设置 DASHSCOPE_API_KEY 环境变量")
         
         logger.info("开始初始化索引...")
-        index1 = create_index('data/OpenAI 官方提示工程指南.pdf')
-        index2 = create_index('data/GoogleAI提示工程指南.pdf')
+        data_dir = 'data'
+        supported_exts = ('.pdf', '.docx', '.doc', '.md', '.txt')
+        for filename in os.listdir(data_dir):
+            if filename.lower().endswith(supported_exts):
+                file_path = os.path.join(data_dir, filename)
+                md5_key = hashlib.md5(filename.encode('utf-8')).hexdigest()
+                indexes[md5_key] = create_index(file_path)
+                logger.info(f"已为 {filename} 创建索引，key={md5_key}")
         logger.info("索引初始化完成")
         
     except Exception as e:
@@ -62,7 +70,7 @@ app = FastAPI(
 
 async def stream_generator(request: QueryRequest):
     try:
-        global index1, index2
+        global indexes
         logger.debug("开始执行RAG查询...")
         
         # 创建一个临时的 DashScope 实例，使用请求中的参数
@@ -102,8 +110,9 @@ async def stream_generator(request: QueryRequest):
                 )
             logger.debug(f"custom_qa_prompt: {custom_qa_prompt}")
             
+            md5_key = hashlib.md5(request.knowledge.encode('utf-8')).hexdigest()
             # 选择使用哪个索引
-            current_index = index2 if request.personality == "googleai" else index1
+            current_index = indexes[md5_key]
             
             if current_index is None:
                 raise Exception("索引未初始化")
@@ -152,7 +161,8 @@ async def stream_generator(request: QueryRequest):
 
 @app.post("/rag/query")
 async def query_documents(request: QueryRequest):
-    if index1 is None or index2 is None:
+    md5_key = hashlib.md5(request.knowledge.encode('utf-8')).hexdigest()
+    if indexes[md5_key] is None:
         raise HTTPException(status_code=500, detail="索引未初始化")
     
     logger.info(f"收到查询请求: {request.query}, 模型: {request.model_name}, 温度: {request.temperature}")
