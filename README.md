@@ -25,7 +25,7 @@ git clone https://github.com/maojindao55/botgroup.chat-server
 ```
 
 2. 安装依赖
-- 安装 docker 
+- 安装 docker bu'z
 - 安装 docker-compose
 - [如何安装? 请访问docker官网](https://www.docker.com/)
 
@@ -134,6 +134,24 @@ llm_groups:
  ...
 
 ```
+## 配置知识库
+ * 在 `/rag/data/` 目录下增加知识库文件，目前支持文件类型: ` .pdf .docx .md .txt `。配置示例如下：
+ ```
+ /rag/data/file1.pdf
+ /rag/data/file2.docx
+ /rag/data/file3.txt
+ ```
+ * 在参考上一步 `config.yaml` 的配置说明，其中在角色配置属性中增加 `rag: true` 和`    knowledge: "file.docx"` 两个属性。配置示例如下：
+ ```
+   - id: "ai13"
+    name: "教练"
+    personality: "coach"
+    rag: true                //开启知识库查询
+    knowledge: "file2.docx"  //知识库的文件名，对应 /rag/data/file2.docx
+    model: "qwen-plus"
+    avatar: "/img/qwen.jpg"
+    custom_prompt: ""
+ ```
 
 
 ## 贡献指南
