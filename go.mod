@@ -4,13 +4,16 @@ go 1.21.8
 
 require (
 	github.com/gin-gonic/gin v1.9.1
+	github.com/redis/go-redis/v9 v9.11.0
 	github.com/sashabaranov/go-openai v1.38.0
 	github.com/spf13/viper v1.16.0
 )
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect

@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"regexp"
 	"time"
 )
 
@@ -23,4 +24,17 @@ func ParseCronExpression(expr string) (bool, error) {
 	// 这里可以添加Cron表达式解析逻辑
 	// 简单实现，实际应使用cron库
 	return true, nil
+}
+
+// IsValidPhone 验证手机号格式（中国大陆）
+func IsValidPhone(phone string) bool {
+	// 中国大陆手机号正则表达式
+	phoneRegex := regexp.MustCompile(`^1[3-9]\d{9}$`)
+	return phoneRegex.MatchString(phone)
+}
+
+// IsValidCode 验证验证码格式（4-8位数字）
+func IsValidCode(code string) bool {
+	codeRegex := regexp.MustCompile(`^\d{4,8}$`)
+	return codeRegex.MatchString(code)
 }

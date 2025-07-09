@@ -29,4 +29,20 @@ devrun.sh
 
 .env.api
 
+#mysql
+mysql/data
+
+#redis
+redis/data
+
 #static/dist
+
+# Air热重载工具生成的文件
+tmp/
+build-errors.log
+.air_tmp
+
+src/.air.toml
+src/.env.api
+src/go.mod
+src/go.sum

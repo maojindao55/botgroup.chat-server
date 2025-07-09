@@ -4,6 +4,23 @@ server:
 database:
   dsn: "memory" 
 
+# 阿里云短信服务配置 (将通过环境变量覆盖)
+sms:
+  access_key_id: "YOUR_ALIYUN_ACCESS_KEY_ID"
+  access_key_secret: "YOUR_ALIYUN_ACCESS_KEY_SECRET"
+  sign_name: "您的签名"
+  template_code: "SMS_123456789"
+
+# Redis配置
+redis:
+  host: "redis"  # 将通过环境变量覆盖
+  port: "6379"   # 将通过环境变量覆盖
+  password: "redis123"  # 将通过环境变量覆盖
+  db: 0  # 将通过环境变量覆盖
+
+# JWT密钥配置
+jwt_secret: "your-super-secret-jwt-key-change-this-in-production"  # 将通过环境变量覆盖
+
 llm_providers:
    aliyun: 
      apikey: "DASHSCOPE_API_KEY"

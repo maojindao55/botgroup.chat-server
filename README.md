@@ -5,6 +5,13 @@ BotGroup.Chat 是一个基于 React 的多人 AI 聊天应用，支持多个 AI 
 
 > 🔗 原项目地址：[botgroup.chat](https://github.com/maojindao55/botgroup.chat)
 
+## 📚 文档
+
+- [Docker部署说明](doc/DOCKER_SETUP.md) - Docker容器化部署配置
+- [Redis配置指南](doc/REDIS_SETUP.md) - Redis存储配置和使用
+- [短信服务配置](doc/SMS_USAGE.md) - 阿里云短信服务集成
+- [用户认证系统](doc/LOGIN_USAGE.md) - JWT登录和用户管理
+- [开发环境配置](doc/DEVELOPMENT.md) - Air热重载开发环境搭建
 
 ## 为什么要做botgroup.chat服务器版？
 原项目仅支持 Cloudflare Pages 部署，这导致：

@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   nginx:
     image: registry.openanolis.cn/openanolis/nginx:1.14.1-8.6
@@ -18,19 +16,35 @@ services:
   golang-app:
     build:
       context: .
-      dockerfile: Dockerfile.golang
+      dockerfile: Dockerfile.golang.dev
     expose:
       - "8080"
     volumes:
+      # 挂载源代码目录以支持热重载
+      - ./src:/app
+      - ./go.mod:/app/go.mod
+      - ./go.sum:/app/go.sum
+      - ./.air.toml:/app/.air.toml
+      # 挂载配置文件
       - ./src/config/config.yaml:/app/config/config.yaml
+      # 创建tmp目录用于air编译
+      - air-tmp:/app/tmp
     env_file:
       - .env.api
+    environment:
+      - GO_ENV=development
     depends_on:
       - redis
       - mysql
     networks:
       - app-network
     restart: always
+    # 开发模式下显示日志
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   rag-app:
     build:
@@ -83,6 +97,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+volumes:
+  air-tmp:
 
 networks:
   app-network:

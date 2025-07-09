@@ -1,0 +1,26 @@
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/golang:1.24-alpine
+
+WORKDIR /app
+
+# 安装必要的工具
+RUN apk add --no-cache git
+
+# 设置国内 Go 代理
+ENV GOPROXY=https://goproxy.cn,direct
+
+# 安装 air 热重载工具
+RUN go install github.com/air-verse/air@latest
+# 复制 go.mod 和 go.sum
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 复制源代码（开发模式下通过volumes挂载）
+COPY src/ .
+
+# 复制 air 配置文件
+COPY .air.toml .
+
+EXPOSE 8080
+
+# 使用 air 启动应用以支持热重载
+CMD ["air", "-c", ".air.toml"] 
