@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
-	"project/config"
-	"project/models"
-	"project/services"
-	"project/utils"
+	"project/src/config"
+	"project/src/models"
+	"project/src/services"
+	"project/src/utils"
 
 	"github.com/gin-gonic/gin"
 )

@@ -3,9 +3,11 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"project/models"
+	"project/src/config"
+	"project/src/models"
 	"strconv"
-	"time"
+
+	"gorm.io/gorm"
 )
 
 // UserRepository 用户仓库接口
@@ -14,44 +16,32 @@ type UserRepository interface {
 	CreateUser(phone, nickname string) (*models.User, error)
 	UpdateLastLoginTime(userID uint) error
 	GetUserByID(userID uint) (*models.User, error)
+	GetUserByIDString(userIDStr string) (*models.User, error)
 }
 
 // userRepository 用户仓库实现
 type userRepository struct {
-	users  []models.User // 临时存储，实际应使用数据库
-	nextID uint
+	db *gorm.DB
 }
 
 // NewUserRepository 创建用户仓库实例
 func NewUserRepository() UserRepository {
-	// 预置测试用户
-	users := []models.User{
-		{
-			ID:          1,
-			Phone:       "13800138000",
-			Nickname:    "测试用户",
-			AvatarURL:   "",
-			Status:      1,
-			CreatedAt:   time.Date(2025, 3, 26, 8, 39, 15, 0, time.UTC),
-			UpdatedAt:   time.Date(2025, 3, 26, 8, 39, 15, 0, time.UTC),
-			LastLoginAt: time.Date(2025, 3, 26, 8, 39, 15, 0, time.UTC),
-		},
-	}
-
 	return &userRepository{
-		users:  users,
-		nextID: 2, // 下一个ID从2开始
+		db: config.GetDB(),
 	}
 }
 
 // GetUserByPhone 根据手机号获取用户
 func (r *userRepository) GetUserByPhone(phone string) (*models.User, error) {
-	for _, user := range r.users {
-		if user.Phone == phone {
-			return &user, nil
+	var user models.User
+	err := r.db.Where("phone = ?", phone).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
 		}
+		return nil, fmt.Errorf("查询用户失败: %v", err)
 	}
-	return nil, errors.New("user not found")
+	return &user, nil
 }
 
 // CreateUser 创建新用户
@@ -61,44 +51,47 @@ func (r *userRepository) CreateUser(phone, nickname string) (*models.User, error
 		return nil, errors.New("user already exists")
 	}
 
-	now := time.Now()
 	user := models.User{
-		ID:          r.nextID,
-		Phone:       phone,
-		Nickname:    nickname,
-		AvatarURL:   "",
-		Status:      1,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-		LastLoginAt: now,
+		Phone:    phone,
+		Nickname: nickname,
+		Status:   1,
 	}
 
-	r.users = append(r.users, user)
-	r.nextID++
+	// GORM会自动设置CreatedAt, UpdatedAt, LastLoginAt
+	err := r.db.Create(&user).Error
+	if err != nil {
+		return nil, fmt.Errorf("创建用户失败: %v", err)
+	}
 
 	return &user, nil
 }
 
 // UpdateLastLoginTime 更新最后登录时间
 func (r *userRepository) UpdateLastLoginTime(userID uint) error {
-	for i, user := range r.users {
-		if user.ID == userID {
-			r.users[i].LastLoginAt = time.Now()
-			r.users[i].UpdatedAt = time.Now()
-			return nil
-		}
+	err := r.db.Model(&models.User{}).Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"last_login_at": gorm.Expr("NOW()"),
+			"updated_at":    gorm.Expr("NOW()"),
+		}).Error
+
+	if err != nil {
+		return fmt.Errorf("更新最后登录时间失败: %v", err)
 	}
-	return errors.New("user not found")
+
+	return nil
 }
 
 // GetUserByID 根据用户ID获取用户
 func (r *userRepository) GetUserByID(userID uint) (*models.User, error) {
-	for _, user := range r.users {
-		if user.ID == userID {
-			return &user, nil
+	var user models.User
+	err := r.db.Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
 		}
+		return nil, fmt.Errorf("查询用户失败: %v", err)
 	}
-	return nil, errors.New("user not found")
+	return &user, nil
 }
 
 // GetUserByIDString 根据字符串用户ID获取用户（用于JWT）

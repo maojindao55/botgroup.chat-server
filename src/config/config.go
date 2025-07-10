@@ -76,7 +76,7 @@ var AppConfig Config
 func LoadConfig() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./config")
+	viper.AddConfigPath("./src/config")
 
 	// 设置默认值
 	viper.SetDefault("server.port", "8080")
@@ -121,6 +121,7 @@ func LoadConfig() {
 	log.Printf("Redis配置: Host=%s, Port=%s, Password=%s, DB=%d",
 		AppConfig.Redis.Host, AppConfig.Redis.Port, AppConfig.Redis.Password, AppConfig.Redis.DB)
 	log.Printf("JWT Secret: %s", AppConfig.JWTSecret)
+	log.Printf("MySQL配置: %s", AppConfig.Database.DSN)
 
 	log.Println("AppConfig:", AppConfig.LLMModels)
 

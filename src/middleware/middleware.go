@@ -1,6 +1,11 @@
 package middleware
 
 import (
+	"fmt"
+	"net/http"
+	"project/src/config"
+	"project/src/services"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -58,6 +63,52 @@ func Cors() gin.HandlerFunc {
 			return
 		}
 
+		c.Next()
+	}
+}
+
+// AuthMiddleware JWT认证中间件
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取Authorization头部
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "缺少认证信息",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证Bearer token格式
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "认证格式错误",
+			})
+			c.Abort()
+			return
+		}
+
+		// 提取token
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+
+		// 创建用户服务并验证token
+		userService := services.NewUserService(config.AppConfig.JWTSecret, config.AppConfig.Redis)
+		user, err := userService.ValidateToken(token)
+		if err != nil {
+			fmt.Println("ValidateToken error", err)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"success": false,
+				"message": "认证失败: " + err.Error(),
+			})
+			c.Abort()
+			return
+		}
+
+		// 将用户信息存储到上下文中
+		c.Set("user", user)
 		c.Next()
 	}
 }

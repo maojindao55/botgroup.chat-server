@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
-	"project/config"
+	"project/src/config"
 	"sync"
 	"time"
 

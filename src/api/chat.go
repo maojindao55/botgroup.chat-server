@@ -3,8 +3,8 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"project/models"
-	"project/services"
+	"project/src/models"
+	"project/src/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +33,6 @@ func ChatHandler(c *gin.Context) {
 		UserID:  req.UserID,
 		Content: req.Message,
 	}, req, c.Writer)
-
 	if err != nil {
 		fmt.Println("处理流式消息失败:", err)
 		// 发送错误事件

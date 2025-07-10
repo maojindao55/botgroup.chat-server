@@ -5,14 +5,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"project/api"
-	"project/config"
-	"project/middleware"
+	"project/src/api"
+	"project/src/config"
+	"project/src/middleware"
 )
 
 func main() {
 	// 加载配置
 	config.LoadConfig()
+
+	// 初始化数据库
+	config.InitDatabase()
 
 	// 创建Gin引擎
 	r := gin.Default()
@@ -37,17 +40,25 @@ func registerRoutes(r *gin.Engine) {
 	// API路由组
 	apiGroup := r.Group("/api")
 	{
-		// 初始化接口
-		apiGroup.GET("/init", api.InitHandler)
-		// 聊天相关接口
-		apiGroup.POST("/chat", api.ChatHandler)
-		// 调度相关接口
-		apiGroup.POST("/scheduler", api.SchedulerHandler)
-		// 短信相关接口
-		apiGroup.POST("/sms/send", api.SendSMSHandler)
-		apiGroup.POST("/sms/send-template", api.SendSMSWithTemplateHandler)
+
+		// // 短信相关接口
+		// apiGroup.POST("/sms/send", api.SendSMSHandler)
+		// apiGroup.POST("/sms/send-template", api.SendSMSWithTemplateHandler)
 		// 用户登录相关接口
 		apiGroup.POST("/login", api.LoginHandler)
 		apiGroup.POST("/sendcode", api.SendCodeHandler) // 测试用接口
+
+		// 需要认证的用户接口
+		userGroup := apiGroup.Group("/")
+		userGroup.Use(middleware.AuthMiddleware())
+		{
+			// 初始化接口
+			userGroup.GET("/init", api.InitHandler)
+			// 聊天相关接口
+			userGroup.POST("/chat", api.ChatHandler)
+			// 调度相关接口
+			userGroup.POST("/scheduler", api.SchedulerHandler)
+			userGroup.GET("/user/info", api.UserInfoHandler)
+		}
 	}
 }

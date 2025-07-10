@@ -7,13 +7,18 @@ import (
 // User 用户模型
 type User struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
-	Phone       string    `json:"phone" gorm:"uniqueIndex;size:11;not null"`
-	Nickname    string    `json:"nickname" gorm:"size:50"`
-	AvatarURL   string    `json:"avatar_url" gorm:"column:avatar_url"`
+	Phone       string    `json:"phone" gorm:"uniqueIndex;size:11;not null;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
+	Nickname    string    `json:"nickname" gorm:"size:50;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
+	AvatarURL   string    `json:"avatar_url" gorm:"column:avatar_url;type:text;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
 	Status      int       `json:"status" gorm:"default:1"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	LastLoginAt time.Time `json:"last_login_at"`
+}
+
+// TableName 设置表名
+func (User) TableName() string {
+	return "users"
 }
 
 // UserLoginRequest 用户登录请求

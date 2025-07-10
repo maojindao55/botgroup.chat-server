@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"project/config"
+	"project/src/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +15,11 @@ func InitHandler(c *gin.Context) {
 		"models":     config.AppConfig.LLMModels,
 		"groups":     config.AppConfig.LLMGroups,
 		"characters": config.AppConfig.LLMCharacters,
+	}
+
+	// 如果存在用户信息，则添加到响应中
+	if user, exists := c.Get("user"); exists {
+		initData["user"] = user
 	}
 
 	c.JSON(http.StatusOK, gin.H{

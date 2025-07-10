@@ -2,7 +2,7 @@ server:
   port: 8080
 
 database:
-  dsn: "memory" 
+  dsn: "mysql" 
 
 # 阿里云短信服务配置 (将通过环境变量覆盖)
 sms:

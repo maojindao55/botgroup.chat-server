@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"project/config"
-	"project/models"
+	"project/src/config"
+	"project/src/models"
 
 	openai "github.com/sashabaranov/go-openai"
 )

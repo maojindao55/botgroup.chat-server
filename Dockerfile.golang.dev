@@ -5,8 +5,9 @@ WORKDIR /app
 # 安装必要的工具
 RUN apk add --no-cache git
 
-# 设置国内 Go 代理
+# 设置国内 Go 代理和模块模式
 ENV GOPROXY=https://goproxy.cn,direct
+ENV GO111MODULE=on
 
 # 安装 air 热重载工具
 RUN go install github.com/air-verse/air@latest
@@ -14,8 +15,8 @@ RUN go install github.com/air-verse/air@latest
 COPY go.mod go.sum ./
 RUN go mod download
 
-# 复制源代码（开发模式下通过volumes挂载）
-COPY src/ .
+# 复制源代码，保持目录结构
+COPY src/ ./src/
 
 # 复制 air 配置文件
 COPY .air.toml .

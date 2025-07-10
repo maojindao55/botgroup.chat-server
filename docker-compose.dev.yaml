@@ -21,12 +21,10 @@ services:
       - "8080"
     volumes:
       # 挂载源代码目录以支持热重载
-      - ./src:/app
+      - ./src:/app/src
       - ./go.mod:/app/go.mod
       - ./go.sum:/app/go.sum
       - ./.air.toml:/app/.air.toml
-      # 挂载配置文件
-      - ./src/config/config.yaml:/app/config/config.yaml
       # 创建tmp目录用于air编译
       - air-tmp:/app/tmp
     env_file:

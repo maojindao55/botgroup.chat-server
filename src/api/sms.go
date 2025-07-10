@@ -2,9 +2,9 @@ package api
 
 import (
 	"net/http"
-	"project/config"
-	"project/services"
-	"project/utils"
+	"project/src/config"
+	"project/src/services"
+	"project/src/utils"
 
 	"github.com/gin-gonic/gin"
 )

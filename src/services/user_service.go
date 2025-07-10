@@ -6,9 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"project/config"
-	"project/models"
-	"project/repository"
+	"os"
+	"project/src/config"
+	"project/src/models"
+	"project/src/repository"
 	"regexp"
 	"strconv"
 	"strings"
@@ -63,14 +64,24 @@ func (s *userService) Login(phone, code string) (*models.UserData, error) {
 		return nil, fmt.Errorf("验证码格式错误")
 	}
 
-	// 从 KV 存储中获取验证码
-	storedCode, err := s.kvService.Get(fmt.Sprintf("sms:%s", phone))
-	if err != nil {
-		return nil, fmt.Errorf("获取验证码失败: %v", err)
-	}
+	// 开发环境验证码检查
+	// 使用 GO_ENV 环境变量判断是否为开发环境（在 docker-compose.dev.yaml 中设置）
+	goEnv := os.Getenv("GO_ENV")
+	isDevEnv := goEnv == "development"
 
-	if storedCode == "" || storedCode != code {
-		return nil, fmt.Errorf("验证码错误或已过期")
+	if isDevEnv && code == "888888" {
+		// 开发环境使用固定验证码 888888，跳过正常验证流程
+		fmt.Printf("开发环境使用固定验证码: %s (GO_ENV=%s)\n", code, goEnv)
+	} else {
+		// 正常环境或非固定验证码，进行正常验证
+		storedCode, err := s.kvService.Get(fmt.Sprintf("sms:%s", phone))
+		if err != nil {
+			return nil, fmt.Errorf("获取验证码失败: %v", err)
+		}
+
+		if storedCode == "" || storedCode != code {
+			return nil, fmt.Errorf("验证码错误或已过期")
+		}
 	}
 
 	// 查询用户是否存在
@@ -131,6 +142,7 @@ func (s *userService) ValidateToken(token string) (*models.User, error) {
 		return nil, fmt.Errorf("无效的token: %v", err)
 	}
 
+	fmt.Println("payload", payload)
 	// 获取用户信息
 	userID, err := strconv.ParseUint(payload.UserID, 10, 64)
 	if err != nil {
