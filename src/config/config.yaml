@@ -21,6 +21,11 @@ redis:
 # JWT密钥配置
 jwt_secret: "your-super-secret-jwt-key-change-this-in-production"  # 将通过环境变量覆盖
 
+# Cloudflare配置
+cloudflare:
+  account_id: "YOUR_CLOUDFLARE_ACCOUNT_ID"  # 将通过环境变量覆盖
+  api_token: "YOUR_CLOUDFLARE_API_TOKEN"    # 将通过环境变量覆盖
+
 llm_providers:
    aliyun: 
      apikey: "DASHSCOPE_API_KEY"

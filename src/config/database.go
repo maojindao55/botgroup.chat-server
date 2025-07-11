@@ -48,10 +48,22 @@ func InitDatabase() {
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 
-	// 设置会话字符集（确保当前连接使用正确的字符集）
-	if err := DB.Exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci").Error; err != nil {
-		log.Printf("设置字符集失败: %v", err)
+	// 强制设置会话字符集（解决乱码问题）
+	charsetCommands := []string{
+		"SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
+		"SET character_set_client = utf8mb4",
+		"SET character_set_connection = utf8mb4",
+		"SET character_set_results = utf8mb4",
+		"SET collation_connection = utf8mb4_unicode_ci",
 	}
+
+	for _, cmd := range charsetCommands {
+		if err := DB.Exec(cmd).Error; err != nil {
+			log.Printf("设置字符集失败 [%s]: %v", cmd, err)
+		}
+	}
+
+	log.Println("字符集设置完成")
 
 	log.Println("数据库连接成功")
 }
@@ -64,7 +76,7 @@ func buildDSN() string {
 	user := getEnv("MYSQL_USER", "botgroup")
 	password := getEnv("MYSQL_PASSWORD", "botgroup123")
 	dbname := getEnv("MYSQL_DATABASE", "botgroup_chat")
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&collation=utf8mb4_unicode_ci&sql_mode=TRADITIONAL",
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&readTimeout=30s&writeTimeout=30s&timeout=30s",
 		user, password, host, port, dbname)
 }
 

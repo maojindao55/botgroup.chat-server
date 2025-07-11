@@ -52,6 +52,13 @@ type RedisConfig struct {
 	DB       int    `mapstructure:"db" json:"db"`
 }
 
+// CloudflareConfig Cloudflare配置结构
+type CloudflareConfig struct {
+	AccountID   string `mapstructure:"account_id" json:"account_id"`
+	APIToken    string `mapstructure:"api_token" json:"api_token"`
+	ImagePrefix string `mapstructure:"image_prefix" json:"image_prefix"`
+}
+
 // Config 应用配置结构
 type Config struct {
 	Server struct {
@@ -68,6 +75,7 @@ type Config struct {
 	SMS             AliyunSMSConfig        `mapstructure:"sms" json:"sms"`
 	Redis           RedisConfig            `mapstructure:"redis" json:"redis"`
 	JWTSecret       string                 `mapstructure:"jwt_secret" json:"jwt_secret"`
+	Cloudflare      CloudflareConfig       `mapstructure:"cloudflare" json:"cloudflare"`
 }
 
 var AppConfig Config
@@ -97,6 +105,9 @@ func LoadConfig() {
 	viper.BindEnv("redis.db", "REDIS_DB")
 
 	viper.BindEnv("jwt_secret", "JWT_SECRET")
+	viper.BindEnv("cloudflare.account_id", "CF_ACCOUNT_ID")
+	viper.BindEnv("cloudflare.api_token", "CF_API_TOKEN")
+	viper.BindEnv("cloudflare.image_prefix", "CF_IMAGE_PREFIX")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -122,6 +133,7 @@ func LoadConfig() {
 		AppConfig.Redis.Host, AppConfig.Redis.Port, AppConfig.Redis.Password, AppConfig.Redis.DB)
 	log.Printf("JWT Secret: %s", AppConfig.JWTSecret)
 	log.Printf("MySQL配置: %s", AppConfig.Database.DSN)
+	log.Printf("Cloudflare配置: AccountID=%s, APIToken=%s", AppConfig.Cloudflare.AccountID, AppConfig.Cloudflare.APIToken)
 
 	log.Println("AppConfig:", AppConfig.LLMModels)
 

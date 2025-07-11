@@ -34,6 +34,7 @@ type UserService interface {
 	Login(phone, code string) (*models.UserData, error)
 	ValidateToken(token string) (*models.User, error)
 	SetSMSCode(phone, code string) error
+	UpdateNickname(userID uint, nickname string) error
 }
 
 // userService 用户服务实现
@@ -174,6 +175,17 @@ func (s *userService) SetSMSCode(phone, code string) error {
 	key := fmt.Sprintf("sms:%s", phone)
 	// 设置5分钟过期时间
 	return s.kvService.Set(key, code, 5*time.Minute)
+}
+
+// UpdateNickname 更新用户昵称
+func (s *userService) UpdateNickname(userID uint, nickname string) error {
+	// 验证昵称长度（1-50字符）
+	if len(nickname) == 0 || len(nickname) > 50 {
+		return fmt.Errorf("昵称长度必须在1-50字符之间")
+	}
+
+	// 调用仓库更新昵称
+	return s.userRepo.UpdateUserNickname(userID, nickname)
 }
 
 // generateToken 生成 JWT token

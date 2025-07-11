@@ -58,7 +58,11 @@ func registerRoutes(r *gin.Engine) {
 			userGroup.POST("/chat", api.ChatHandler)
 			// 调度相关接口
 			userGroup.POST("/scheduler", api.SchedulerHandler)
+			// 用户相关接口
 			userGroup.GET("/user/info", api.UserInfoHandler)
+			userGroup.POST("/user/update", api.UserUpdateHandler)
+			// 上传相关接口
+			userGroup.POST("/upload", api.UploadHandler)
 		}
 	}
 }

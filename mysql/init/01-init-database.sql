@@ -1,6 +1,13 @@
 -- 初始化数据库脚本
 -- 这个脚本会在 MySQL 容器首次启动时自动执行
 
+-- 设置客户端字符集
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET character_set_client = utf8mb4;
+SET character_set_connection = utf8mb4;
+SET character_set_results = utf8mb4;
+SET collation_connection = utf8mb4_unicode_ci;
+
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS botgroup_chat DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

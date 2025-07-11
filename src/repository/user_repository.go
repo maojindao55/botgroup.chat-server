@@ -6,6 +6,7 @@ import (
 	"project/src/config"
 	"project/src/models"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,6 +18,7 @@ type UserRepository interface {
 	UpdateLastLoginTime(userID uint) error
 	GetUserByID(userID uint) (*models.User, error)
 	GetUserByIDString(userIDStr string) (*models.User, error)
+	UpdateUserNickname(userID uint, nickname string) error
 }
 
 // userRepository 用户仓库实现
@@ -51,13 +53,17 @@ func (r *userRepository) CreateUser(phone, nickname string) (*models.User, error
 		return nil, errors.New("user already exists")
 	}
 
+	now := time.Now()
 	user := models.User{
-		Phone:    phone,
-		Nickname: nickname,
-		Status:   1,
+		Phone:       phone,
+		Nickname:    nickname,
+		Status:      1,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		LastLoginAt: now,
 	}
 
-	// GORM会自动设置CreatedAt, UpdatedAt, LastLoginAt
+	// 创建用户
 	err := r.db.Create(&user).Error
 	if err != nil {
 		return nil, fmt.Errorf("创建用户失败: %v", err)
@@ -101,4 +107,19 @@ func (r *userRepository) GetUserByIDString(userIDStr string) (*models.User, erro
 		return nil, fmt.Errorf("invalid user ID format: %v", err)
 	}
 	return r.GetUserByID(uint(userID))
+}
+
+// UpdateUserNickname 更新用户昵称
+func (r *userRepository) UpdateUserNickname(userID uint, nickname string) error {
+	err := r.db.Model(&models.User{}).Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"nickname":   nickname,
+			"updated_at": gorm.Expr("NOW()"),
+		}).Error
+
+	if err != nil {
+		return fmt.Errorf("更新用户昵称失败: %v", err)
+	}
+
+	return nil
 }
