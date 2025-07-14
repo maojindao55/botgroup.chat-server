@@ -11,7 +11,7 @@ services:
       - ./static:/usr/share/nginx/html
     depends_on:
       - golang-app
-      - rag-app
+      #- rag-app
     networks:
       - app-network
 
