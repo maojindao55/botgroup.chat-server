@@ -31,21 +31,21 @@ services:
     networks:
       - app-network
     restart: always
-
-  rag-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.rag
-    expose:
-      - "8070"
-    env_file:
-      - .env.api
-    depends_on:
-      - redis
-      - mysql
-    networks:
-      - app-network
-    restart: always
+########如果开启rag 知识库至少需要4G内存，请把下面注释去掉#######
+  #  rag-app:
+  #   build:
+  #   context: .
+  #     dockerfile: Dockerfile.rag
+  #   expose:
+  #     - "8070"
+  #   env_file:
+  #     - .env.api
+  #   depends_on:
+  #     - redis
+  #     - mysql
+  #   networks:
+  #     - app-network
+  #   restart: always
 
   redis:
     image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:7.0.14-alpine
