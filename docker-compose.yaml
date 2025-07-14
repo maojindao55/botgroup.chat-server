@@ -10,10 +10,13 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./static:/usr/share/nginx/html
     depends_on:
-      - golang-app
-      #- rag-app
+      golang-app:
+        condition: service_healthy
+      #rag-app:
+      #  condition: service_healthy
     networks:
       - app-network
+    restart: always
 
   golang-app:
     build:
@@ -26,11 +29,19 @@ services:
     env_file:
       - .env.api
     depends_on:
-      - redis
-      - mysql
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
     networks:
       - app-network
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 ########如果开启rag 知识库至少需要4G内存，请把下面注释去掉#######
   #  rag-app:
   #   build:

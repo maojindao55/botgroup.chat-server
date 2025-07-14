@@ -2,6 +2,9 @@ FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/golang:1.21-alpine
 
 WORKDIR /app
 
+# 安装 wget 用于健康检查
+RUN apk add --no-cache wget
+
 # 设置国内 Go 代理和模块模式
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GO111MODULE=on

@@ -37,6 +37,53 @@ func main() {
 }
 
 func registerRoutes(r *gin.Engine) {
+	// 根路径响应
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "BotGroup Chat API Server",
+			"version": "1.0.0",
+			"status":  "running",
+		})
+	})
+
+	// 简单健康检查端点（用于Docker健康检查）
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"message": "服务正常运行",
+		})
+	})
+
+	// 详细健康检查端点（包含数据库检查）
+	r.GET("/health/detailed", func(c *gin.Context) {
+		// 检查数据库连接
+		sqlDB, err := config.DB.DB()
+		if err != nil {
+			c.JSON(503, gin.H{
+				"status":  "error",
+				"message": "数据库连接失败",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		// 测试数据库连接
+		if err := sqlDB.Ping(); err != nil {
+			c.JSON(503, gin.H{
+				"status":  "error",
+				"message": "数据库ping失败",
+				"error":   err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status":   "ok",
+			"message":  "服务正常运行",
+			"database": "connected",
+		})
+	})
+
 	// API路由组
 	apiGroup := r.Group("/api")
 	{
