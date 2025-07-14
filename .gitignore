@@ -41,8 +41,8 @@ redis/data
 tmp/
 build-errors.log
 .air_tmp
+.vscode
 
-src/.air.toml
-src/.env.api
-src/go.mod
-src/go.sum
+/bin
+
+

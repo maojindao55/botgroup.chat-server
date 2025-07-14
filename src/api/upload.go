@@ -138,7 +138,7 @@ func UploadHandler(c *gin.Context) {
 	if err := json.Unmarshal(body, &cloudflareResp); err != nil {
 		c.JSON(http.StatusInternalServerError, UploadResponse{
 			Success: false,
-			Message: "解析响应失败: " + err.Error(),
+			Message: "解析响应失败: " + err.Error() + " " + string(body),
 		})
 		return
 	}

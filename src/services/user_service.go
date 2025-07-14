@@ -35,6 +35,7 @@ type UserService interface {
 	ValidateToken(token string) (*models.User, error)
 	SetSMSCode(phone, code string) error
 	UpdateNickname(userID uint, nickname string) error
+	UpdateAvatar(userID uint, avatarURL string) error
 }
 
 // userService 用户服务实现
@@ -186,6 +187,17 @@ func (s *userService) UpdateNickname(userID uint, nickname string) error {
 
 	// 调用仓库更新昵称
 	return s.userRepo.UpdateUserNickname(userID, nickname)
+}
+
+// UpdateAvatar 更新用户头像
+func (s *userService) UpdateAvatar(userID uint, avatarURL string) error {
+	// 验证头像URL不为空
+	if len(avatarURL) == 0 {
+		return fmt.Errorf("头像URL不能为空")
+	}
+
+	// 调用仓库更新头像（ORM Hook会自动处理前缀）
+	return s.userRepo.UpdateUserAvatar(userID, avatarURL)
 }
 
 // generateToken 生成 JWT token

@@ -25,6 +25,7 @@ jwt_secret: "your-super-secret-jwt-key-change-this-in-production"  # 将通过�
 cloudflare:
   account_id: "YOUR_CLOUDFLARE_ACCOUNT_ID"  # 将通过环境变量覆盖
   api_token: "YOUR_CLOUDFLARE_API_TOKEN"    # 将通过环境变量覆盖
+  image_prefix: "https://imagedelivery.net/YOUR_ACCOUNT_HASH/"  # 将通过环境变量覆盖
 
 llm_providers:
    aliyun: 
@@ -220,11 +221,11 @@ llm_groups:
       - "ai12"
     isGroupDiscussionMode: true
 
-  - id: "group3"
-    name: "知识库问答群"
-    description: ""
-    members: 
-      - "ai11"
-      - "ai12"
-    isGroupDiscussionMode: false
+  # - id: "group3"
+  #   name: "知识库问答群"
+  #   description: ""
+  #   members: 
+  #     - "ai11"
+  #     - "ai12"
+  #   isGroupDiscussionMode: false
   

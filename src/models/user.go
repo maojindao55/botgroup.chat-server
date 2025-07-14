@@ -1,7 +1,12 @@
 package models
 
 import (
+	"fmt"
+	"project/src/config"
+	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // User 用户模型
@@ -19,6 +24,17 @@ type User struct {
 // TableName 设置表名
 func (User) TableName() string {
 	return "users"
+}
+
+// AfterFind GORM Hook: 查询后自动添加头像URL前缀
+func (u *User) AfterFind(tx *gorm.DB) error {
+	if u.AvatarURL != "" && config.AppConfig.Cloudflare.ImagePrefix != "" {
+		// 检查URL是否已经包含前缀，避免重复添加
+		if !strings.HasPrefix(u.AvatarURL, config.AppConfig.Cloudflare.ImagePrefix) {
+			u.AvatarURL = fmt.Sprintf(config.AppConfig.Cloudflare.ImagePrefix, u.AvatarURL)
+		}
+	}
+	return nil
 }
 
 // UserLoginRequest 用户登录请求

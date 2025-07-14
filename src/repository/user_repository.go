@@ -19,6 +19,7 @@ type UserRepository interface {
 	GetUserByID(userID uint) (*models.User, error)
 	GetUserByIDString(userIDStr string) (*models.User, error)
 	UpdateUserNickname(userID uint, nickname string) error
+	UpdateUserAvatar(userID uint, avatarURL string) error
 }
 
 // userRepository 用户仓库实现
@@ -119,6 +120,21 @@ func (r *userRepository) UpdateUserNickname(userID uint, nickname string) error 
 
 	if err != nil {
 		return fmt.Errorf("更新用户昵称失败: %v", err)
+	}
+
+	return nil
+}
+
+// UpdateUserAvatar 更新用户头像
+func (r *userRepository) UpdateUserAvatar(userID uint, avatarURL string) error {
+	err := r.db.Model(&models.User{}).Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"avatar_url": avatarURL,
+			"updated_at": gorm.Expr("NOW()"),
+		}).Error
+
+	if err != nil {
+		return fmt.Errorf("更新用户头像失败: %v", err)
 	}
 
 	return nil

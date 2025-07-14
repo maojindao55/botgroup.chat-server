@@ -62,7 +62,7 @@ func registerRoutes(r *gin.Engine) {
 			userGroup.GET("/user/info", api.UserInfoHandler)
 			userGroup.POST("/user/update", api.UserUpdateHandler)
 			// 上传相关接口
-			userGroup.POST("/upload", api.UploadHandler)
+			userGroup.POST("/user/upload", api.UploadHandler)
 		}
 	}
 }

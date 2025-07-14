@@ -18,7 +18,8 @@ type UserInfoResponse struct {
 
 // UserUpdateRequest 用户更新请求结构
 type UserUpdateRequest struct {
-	Nickname string `json:"nickname" binding:"required"`
+	Nickname  string `json:"nickname"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 // UserUpdateResponse 用户更新响应结构
@@ -50,7 +51,7 @@ func UserInfoHandler(c *gin.Context) {
 		return
 	}
 
-	// 返回用户信息
+	// 返回用户信息（ORM Hook会自动处理头像URL前缀）
 	c.JSON(http.StatusOK, UserInfoResponse{
 		Success: true,
 		Message: "获取用户信息成功",
@@ -90,24 +91,50 @@ func UserUpdateHandler(c *gin.Context) {
 		return
 	}
 
-	// 创建用户服务
-	userService := services.NewUserService(config.AppConfig.JWTSecret, config.AppConfig.Redis)
-
-	// 调用服务更新昵称
-	err := userService.UpdateNickname(user.ID, req.Nickname)
-	if err != nil {
+	// 验证至少有一个字段需要更新
+	if req.Nickname == "" && req.AvatarURL == "" {
 		c.JSON(http.StatusBadRequest, UserUpdateResponse{
 			Success: false,
-			Message: err.Error(),
+			Message: "至少需要提供昵称或头像URL中的一个",
 		})
 		return
 	}
 
-	user.Nickname = req.Nickname
+	// 创建用户服务
+	userService := services.NewUserService(config.AppConfig.JWTSecret, config.AppConfig.Redis)
+
+	// 更新昵称（如果提供了）
+	if req.Nickname != "" {
+		err := userService.UpdateNickname(user.ID, req.Nickname)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, UserUpdateResponse{
+				Success: false,
+				Message: err.Error(),
+			})
+			return
+		}
+		user.Nickname = req.Nickname
+	}
+
+	// 更新头像（如果提供了）
+	if req.AvatarURL != "" {
+		err := userService.UpdateAvatar(user.ID, req.AvatarURL)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, UserUpdateResponse{
+				Success: false,
+				Message: err.Error(),
+			})
+			return
+		}
+
+		// 更新返回数据中的头像URL（ORM Hook会自动处理前缀）
+		user.AvatarURL = req.AvatarURL
+	}
+
 	// 返回成功响应
 	c.JSON(http.StatusOK, UserUpdateResponse{
 		Success: true,
-		Message: "更新用户昵称成功",
+		Message: "更新用户信息成功",
 		Data:    user,
 	})
 }
