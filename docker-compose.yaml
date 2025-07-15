@@ -22,8 +22,6 @@ services:
       dockerfile: Dockerfile.golang
     expose:
       - "8080"
-    volumes:
-      - ./src/config/config.yaml:/app/config/config.yaml
     env_file:
       - .env.api
     depends_on:
