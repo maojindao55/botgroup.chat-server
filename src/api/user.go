@@ -130,7 +130,22 @@ func UserUpdateHandler(c *gin.Context) {
 		// 更新返回数据中的头像URL（ORM Hook会自动处理前缀）
 		user.AvatarURL = req.AvatarURL
 	}
-
+	//重新获取用户信息
+	user, err := userService.GetUserByID(user.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, UserUpdateResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, UserUpdateResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
 	// 返回成功响应
 	c.JSON(http.StatusOK, UserUpdateResponse{
 		Success: true,

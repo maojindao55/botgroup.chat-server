@@ -36,6 +36,7 @@ type UserService interface {
 	SetSMSCode(phone, code string) error
 	UpdateNickname(userID uint, nickname string) error
 	UpdateAvatar(userID uint, avatarURL string) error
+	GetUserByID(userID uint) (*models.User, error)
 }
 
 // userService 用户服务实现
@@ -52,6 +53,9 @@ func NewUserService(jwtSecret string, redisConfig config.RedisConfig) UserServic
 		kvService: NewKVService(redisConfig),
 		jwtSecret: jwtSecret,
 	}
+}
+func (s *userService) GetUserByID(userID uint) (*models.User, error) {
+	return s.userRepo.GetUserByID(userID)
 }
 
 // Login 用户登录
