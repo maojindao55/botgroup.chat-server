@@ -26,6 +26,8 @@ services:
       - "8080"
     volumes:
       - ./src/config/config.yaml:/app/src/config/config.yaml
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     env_file:
       - .env.api
     depends_on:
