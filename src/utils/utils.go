@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"math/rand"
 	"regexp"
 	"time"
 )
@@ -12,6 +13,20 @@ func GenerateID() string {
 	timestamp := time.Now().UnixNano()
 	hash := md5.Sum([]byte(time.Now().String()))
 	return hex.EncodeToString(hash[:]) + string(timestamp)
+}
+
+// GenerateRandomCode 生成指定长度的随机数字验证码
+func GenerateRandomCode(length int) string {
+	if length <= 0 {
+		length = 6
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	code := ""
+	for i := 0; i < length; i++ {
+		code += string(rune('0' + rand.Intn(10)))
+	}
+	return code
 }
 
 // FormatTime 格式化时间

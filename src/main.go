@@ -93,9 +93,9 @@ func registerRoutes(r *gin.Engine) {
 		// apiGroup.POST("/sms/send-template", api.SendSMSWithTemplateHandler)
 		// 用户登录相关接口
 		apiGroup.POST("/login", api.LoginHandler)
-		apiGroup.POST("/sendcode", api.SendCodeHandler) // 测试用接口
+		//apiGroup.POST("/sendcode", api.SendCodeHandler) // 测试用接口
 		apiGroup.GET("/captcha", api.CaptchaHandler)
-		apiGroup.GET("/captcha/check", api.CaptchaCheckHandler)
+		apiGroup.POST("/captcha/check", api.CaptchaCheckHandler)
 
 		// 需要认证的用户接口
 		userGroup := apiGroup.Group("/")

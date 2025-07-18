@@ -212,13 +212,13 @@ llm_groups:
       - "ai10"
     isGroupDiscussionMode: true
 
-  - id: "group2"
-    name: "知识库问答群"
-    description: ""
-    members: 
-      - "ai11"
-      - "ai12"
-    isGroupDiscussionMode: true
+  # - id: "group2"
+  #   name: "知识库问答群"
+  #   description: ""
+  #   members: 
+  #     - "ai11"
+  #     - "ai12"
+  #   isGroupDiscussionMode: true
 
   # - id: "group3"
   #   name: "知识库问答群"
