@@ -43,36 +43,18 @@
 
 ## 3. 数据库设计
 
-### 3.1 用户表扩展 (users)
+### 3.1 现有用户表保持不变 (users)
 ```sql
--- 扩展现有users表，添加微信相关字段
-ALTER TABLE users ADD COLUMN openid VARCHAR(64) COMMENT '微信OpenID';
-ALTER TABLE users ADD COLUMN unionid VARCHAR(64) COMMENT '微信UnionID';
-ALTER TABLE users ADD COLUMN wechat_nickname VARCHAR(100) COMMENT '微信昵称';
-ALTER TABLE users ADD COLUMN wechat_avatar_url TEXT COMMENT '微信头像URL';
-ALTER TABLE users ADD COLUMN wechat_gender TINYINT DEFAULT 0 COMMENT '微信性别 0-未知 1-男 2-女';
-ALTER TABLE users ADD COLUMN wechat_country VARCHAR(50) COMMENT '微信国家';
-ALTER TABLE users ADD COLUMN wechat_province VARCHAR(50) COMMENT '微信省份';
-ALTER TABLE users ADD COLUMN wechat_city VARCHAR(50) COMMENT '微信城市';
-ALTER TABLE users ADD COLUMN wechat_language VARCHAR(20) COMMENT '微信语言';
-ALTER TABLE users ADD COLUMN login_type ENUM('phone', 'wechat', 'both') DEFAULT 'phone' COMMENT '登录方式';
-ALTER TABLE users ADD COLUMN wechat_session_key VARCHAR(100) COMMENT '微信会话密钥';
-ALTER TABLE users ADD COLUMN wechat_access_token VARCHAR(500) COMMENT '微信访问令牌';
-ALTER TABLE users ADD COLUMN wechat_refresh_token VARCHAR(500) COMMENT '微信刷新令牌';
-ALTER TABLE users ADD COLUMN wechat_expires_at TIMESTAMP NULL COMMENT '微信令牌过期时间';
-
--- 添加索引
-ALTER TABLE users ADD INDEX idx_openid (openid);
-ALTER TABLE users ADD INDEX idx_unionid (unionid);
-ALTER TABLE users ADD INDEX idx_login_type (login_type);
+-- 现有users表结构保持不变，不添加任何微信相关字段
+-- 保持原有的手机号验证码登录功能完整性
 ```
 
-### 3.2 微信用户绑定表 (user_wechat_bindings)
+### 3.2 微信用户表 (wechat_users)
 ```sql
-CREATE TABLE user_wechat_bindings (
+CREATE TABLE wechat_users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL COMMENT '用户ID',
-    openid VARCHAR(64) NOT NULL COMMENT '微信OpenID',
+    uid BIGINT COMMENT '关联用户ID，关联users表的id字段',
+    openid VARCHAR(64) UNIQUE NOT NULL COMMENT '微信OpenID',
     unionid VARCHAR(64) COMMENT '微信UnionID',
     nickname VARCHAR(100) COMMENT '微信昵称',
     avatar_url TEXT COMMENT '微信头像URL',
@@ -85,13 +67,33 @@ CREATE TABLE user_wechat_bindings (
     access_token VARCHAR(500) COMMENT '访问令牌',
     refresh_token VARCHAR(500) COMMENT '刷新令牌',
     expires_at TIMESTAMP NULL COMMENT '令牌过期时间',
+    last_login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '最后登录时间',
     bind_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
+    INDEX idx_uid (uid),
     INDEX idx_openid (openid),
     INDEX idx_unionid (unionid),
-    UNIQUE KEY uk_user_openid (user_id, openid)
+    INDEX idx_bind_at (bind_at),
+    FOREIGN KEY (uid) REFERENCES users(id) ON DELETE SET NULL
+);
+```
+
+### 3.3 用户登录方式表 (user_login_types)
+```sql
+CREATE TABLE user_login_types (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    login_type ENUM('phone', 'wechat', 'both') DEFAULT 'phone' COMMENT '登录方式',
+    wechat_user_id BIGINT COMMENT '关联的微信用户ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_login_type (login_type),
+    INDEX idx_wechat_user_id (wechat_user_id),
+    UNIQUE KEY uk_user_id (user_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (wechat_user_id) REFERENCES wechat_users(id) ON DELETE SET NULL
 );
 ```
 
@@ -202,13 +204,15 @@ Authorization: Bearer {token}
         "status": "number",
         "login_type": "phone|wechat|both",
         "wechat_info": {
+            "wechat_user_id": "number",
             "openid": "string",
             "nickname": "string",
             "avatar_url": "string",
             "gender": "number",
             "country": "string",
             "province": "string",
-            "city": "string"
+            "city": "string",
+            "bind_at": "string"
         },
         "created_at": "string",
         "updated_at": "string",
@@ -277,8 +281,9 @@ Authorization: Bearer {token}
 ## 5. 核心代码结构
 
 ### 5.1 模型层 (Models)
-- `User` - 扩展现有用户模型，添加微信相关字段
-- `WechatBinding` - 微信账号绑定模型
+- `User` - 保持现有用户模型不变
+- `WechatUser` - 微信用户模型，通过uid字段关联User
+- `UserLoginType` - 用户登录方式模型
 - `LoginSession` - 登录会话模型
 
 ### 5.2 服务层 (Services)
@@ -298,8 +303,9 @@ Authorization: Bearer {token}
 - `RateLimitMiddleware` - 限流中间件
 
 ### 5.5 数据仓库 (Repository)
-- `UserRepository` - 扩展现有用户仓库
-- `WechatBindingRepository` - 微信绑定仓库
+- `UserRepository` - 保持现有用户仓库不变
+- `WechatUserRepository` - 微信用户仓库
+- `UserLoginTypeRepository` - 用户登录方式仓库
 
 ## 6. 实现流程
 
@@ -315,19 +321,24 @@ Authorization: Bearer {token}
 9. 通过WebSocket推送状态给前端
 10. 用户确认登录
 11. 获取微信用户信息
-12. 检查是否已存在绑定用户
-13. 生成JWT Token（与现有登录系统兼容）
-14. 返回登录成功信息
+12. 检查wechat_users表中是否存在该openid
+13. 如果存在且已绑定用户，直接登录
+14. 如果存在但未绑定用户，创建绑定关系
+15. 如果不存在，创建新的wechat_user记录
+16. 更新user_login_types表的登录方式
+17. 生成JWT Token（与现有登录系统兼容）
+18. 返回登录成功信息
 
 ### 6.2 账号绑定流程
 1. 已登录用户请求绑定微信账号
 2. 生成微信登录二维码
 3. 用户扫描并确认
 4. 获取微信用户信息
-5. 检查微信账号是否已被其他用户绑定
-6. 创建绑定关系
-7. 更新用户login_type为"both"
-8. 返回绑定成功信息
+5. 检查wechat_users表中该openid是否已被其他用户绑定
+6. 如果未绑定，创建wechat_user记录并设置uid为当前用户ID
+7. 如果已绑定其他用户，返回错误
+8. 更新user_login_types表的login_type为"both"
+9. 返回绑定成功信息
 
 ### 6.3 状态检查流程
 1. 前端定期轮询登录状态
@@ -454,12 +465,26 @@ type AppConfig struct {
 
 3. **数据库迁移**
    ```sql
-   -- 扩展现有users表
-   ALTER TABLE users ADD COLUMN openid VARCHAR(64) COMMENT '微信OpenID';
-   -- ... (其他字段)
+   -- 创建微信用户表
+   CREATE TABLE wechat_users (
+       id BIGINT PRIMARY KEY AUTO_INCREMENT,
+       uid BIGINT COMMENT '关联用户ID',
+       openid VARCHAR(64) UNIQUE NOT NULL COMMENT '微信OpenID',
+       -- ... (其他字段)
+   );
    
-   -- 创建微信绑定表
-   CREATE TABLE user_wechat_bindings (...);
+   -- 创建用户登录方式表
+   CREATE TABLE user_login_types (
+       id BIGINT PRIMARY KEY AUTO_INCREMENT,
+       user_id BIGINT NOT NULL COMMENT '用户ID',
+       login_type ENUM('phone', 'wechat', 'both') DEFAULT 'phone' COMMENT '登录方式',
+       wechat_user_id BIGINT COMMENT '关联的微信用户ID',
+       -- ... (其他字段)
+   );
+   
+   -- 为现有用户初始化登录方式
+   INSERT INTO user_login_types (user_id, login_type) 
+   SELECT id, 'phone' FROM users;
    ```
 
 4. **启动应用服务**
@@ -491,9 +516,10 @@ type AppConfig struct {
 
 ### 10.2 集成测试
 - API接口测试（微信登录、账号绑定）
-- 数据库操作测试（用户表扩展、绑定表）
+- 数据库操作测试（wechat_users表、user_login_types表）
 - Redis缓存测试（会话存储、状态管理）
 - 现有登录功能兼容性测试
+- 表关联关系测试
 
 ### 10.3 端到端测试
 - 微信扫码登录完整流程测试
@@ -551,10 +577,11 @@ type AppConfig struct {
 - 🔄 微信账号解绑（`POST /api/user/unbind-wechat`）
 
 ### 12.3 数据迁移策略
-1. **渐进式迁移**：现有用户数据保持不变
-2. **可选绑定**：用户可选择是否绑定微信账号
-3. **数据同步**：微信信息与现有用户信息同步
-4. **登录方式升级**：支持从单一登录方式升级为多登录方式
+1. **零影响迁移**：现有users表完全不变，保持原有功能
+2. **独立表设计**：微信用户数据存储在独立的wechat_users表中
+3. **关联关系管理**：通过uid字段和user_login_types表管理关联关系
+4. **可选绑定**：用户可选择是否绑定微信账号
+5. **登录方式升级**：支持从单一登录方式升级为多登录方式
 
 ### 12.4 API兼容性
 - 保持现有API接口不变
