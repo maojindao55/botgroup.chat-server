@@ -59,6 +59,23 @@ type CloudflareConfig struct {
 	ImagePrefix string `mapstructure:"image_prefix" json:"image_prefix"`
 }
 
+// WechatConfig 微信公众号配置结构
+type WechatConfig struct {
+	AppID            string `mapstructure:"app_id" json:"app_id"`
+	AppSecret        string `mapstructure:"app_secret" json:"app_secret"`
+	Token            string `mapstructure:"token" json:"token"`
+	CallbackURL      string `mapstructure:"callback_url" json:"callback_url"`
+	QRExpiresIn      int    `mapstructure:"qr_expires_in" json:"qr_expires_in"`
+	SessionExpiresIn int    `mapstructure:"session_expires_in" json:"session_expires_in"`
+}
+
+// WebSocketConfig WebSocket配置结构
+type WebSocketConfig struct {
+	ReadBufferSize  int  `mapstructure:"read_buffer_size" json:"read_buffer_size"`
+	WriteBufferSize int  `mapstructure:"write_buffer_size" json:"write_buffer_size"`
+	CheckOrigin     bool `mapstructure:"check_origin" json:"check_origin"`
+}
+
 // Config 应用配置结构
 type Config struct {
 	Server struct {
@@ -76,6 +93,8 @@ type Config struct {
 	Redis           RedisConfig            `mapstructure:"redis" json:"redis"`
 	JWTSecret       string                 `mapstructure:"jwt_secret" json:"jwt_secret"`
 	Cloudflare      CloudflareConfig       `mapstructure:"cloudflare" json:"cloudflare"`
+	Wechat          WechatConfig           `mapstructure:"wechat" json:"wechat"`
+	WebSocket       WebSocketConfig        `mapstructure:"websocket" json:"websocket"`
 }
 
 var AppConfig Config
@@ -109,6 +128,19 @@ func LoadConfig() {
 	viper.BindEnv("cloudflare.api_token", "CF_API_TOKEN")
 	viper.BindEnv("cloudflare.image_prefix", "CF_IMAGE_PREFIX")
 
+	// 微信公众号配置环境变量绑定
+	viper.BindEnv("wechat.app_id", "WECHAT_APP_ID")
+	viper.BindEnv("wechat.app_secret", "WECHAT_APP_SECRET")
+	viper.BindEnv("wechat.token", "WECHAT_TOKEN")
+	viper.BindEnv("wechat.callback_url", "WECHAT_CALLBACK_URL")
+	viper.BindEnv("wechat.qr_expires_in", "WECHAT_QR_EXPIRES_IN")
+	viper.BindEnv("wechat.session_expires_in", "WECHAT_SESSION_EXPIRES_IN")
+
+	// WebSocket配置环境变量绑定
+	viper.BindEnv("websocket.read_buffer_size", "WS_READ_BUFFER_SIZE")
+	viper.BindEnv("websocket.write_buffer_size", "WS_WRITE_BUFFER_SIZE")
+	viper.BindEnv("websocket.check_origin", "WS_CHECK_ORIGIN")
+
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Println("未找到配置文件，使用默认配置")
@@ -134,6 +166,11 @@ func LoadConfig() {
 	log.Printf("JWT Secret: %s", AppConfig.JWTSecret)
 	log.Printf("MySQL配置: %s", AppConfig.Database.DSN)
 	log.Printf("Cloudflare配置: AccountID=%s, APIToken=%s", AppConfig.Cloudflare.AccountID, AppConfig.Cloudflare.APIToken)
+	log.Printf("微信配置: AppID=%s, Token=%s, CallbackURL=%s, QRExpiresIn=%d, SessionExpiresIn=%d",
+		AppConfig.Wechat.AppID, AppConfig.Wechat.Token, AppConfig.Wechat.CallbackURL,
+		AppConfig.Wechat.QRExpiresIn, AppConfig.Wechat.SessionExpiresIn)
+	log.Printf("WebSocket配置: ReadBufferSize=%d, WriteBufferSize=%d, CheckOrigin=%t",
+		AppConfig.WebSocket.ReadBufferSize, AppConfig.WebSocket.WriteBufferSize, AppConfig.WebSocket.CheckOrigin)
 
 	log.Println("AppConfig:", AppConfig.LLMModels)
 

@@ -27,6 +27,21 @@ cloudflare:
   api_token: "YOUR_CLOUDFLARE_API_TOKEN"    # 将通过环境变量覆盖
   image_prefix: "https://imagedelivery.net/YOUR_ACCOUNT_HASH/"  # 将通过环境变量覆盖
 
+# 微信公众号配置
+wechat:
+  app_id: "wx1234567890abcdef"           # 微信公众号AppID，将通过环境变量覆盖
+  app_secret: "1234567890abcdef12345678" # 微信公众号AppSecret，将通过环境变量覆盖
+  token: "your_wechat_token_here"        # 微信公众号Token，将通过环境变量覆盖
+  callback_url: "https://your-domain.com/api/auth/wechat/callback"  # 回调URL，将通过环境变量覆盖
+  qr_expires_in: 600                     # 临时二维码过期时间(秒)
+  session_expires_in: 600                # 登录会话过期时间(秒)
+
+# WebSocket配置
+websocket:
+  read_buffer_size: 1024   # 读取缓冲区大小
+  write_buffer_size: 1024  # 写入缓冲区大小
+  check_origin: true       # 是否检查源
+
 llm_providers:
    aliyun: 
      apikey: "DASHSCOPE_API_KEY"

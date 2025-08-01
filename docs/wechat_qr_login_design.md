@@ -3,29 +3,61 @@
 ## 1. 功能概述
 
 ### 1.1 功能描述
-在现有手机号验证码登录基础上，新增基于微信开放平台的扫码登录功能，用户可通过扫描二维码完成身份验证和登录，支持多种登录方式并存。
+在现有手机号验证码登录基础上，新增基于微信公众号关注事件的扫码登录功能。用户扫描二维码关注公众号后，系统自动完成用户注册或登录，通过WebSocket实时推送登录结果，支持多种登录方式并存。
 
 ### 1.2 技术栈
 - 后端框架：Gin (Go)
 - 数据库：MySQL + Redis
-- 微信开放平台 API
-- WebSocket (用于实时状态推送)
+- 微信公众号 API（临时二维码 + 事件回调）
+- WebSocket（用于实时登录结果推送）
 - JWT Token 身份验证（与现有登录系统兼容）
 
 ### 1.3 功能特点
-- **多登录方式支持**：手机号验证码 + 微信扫码登录
+- **简化登录流程**：扫码关注即登录，一步到位
 - **统一用户体系**：微信用户与手机号用户数据关联
-- **安全性高**：基于微信官方认证 + JWT Token
-- **用户体验好**：扫码即登录，无需记忆密码
-- **实时反馈**：登录状态实时推送
-- **会话管理**：支持多设备登录控制
+- **安全性高**：基于微信公众号官方认证 + JWT Token
+- **用户体验佳**：无需记忆密码，关注即可使用
+- **实时反馈**：WebSocket实时推送登录结果
+- **用户粘性强**：用户关注公众号，便于后续运营
+- **技术门槛低**：相比开放平台，公众号更容易申请和配置
 - **向后兼容**：保留现有登录功能，平滑升级
 
 ## 2. 系统架构
 
-### 2.1 整体架构图
+### 2.1 登录流程图
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant Frontend as 前端页面
+    participant Backend as 后端服务
+    participant WeChat as 微信公众号
+    participant WS as WebSocket连接
+
+    User->>Frontend: 访问登录页面
+    Frontend->>Backend: 请求生成二维码
+    Backend->>WeChat: 调用微信公众号API生成二维码
+    WeChat-->>Backend: 返回二维码参数
+    Backend-->>Frontend: 返回二维码URL和会话ID
+    Frontend->>WS: 建立WebSocket连接(session_id)
+    Frontend->>User: 显示二维码
+
+    User->>WeChat: 扫描二维码
+    WeChat->>User: 显示公众号关注页面
+    User->>WeChat: 点击关注公众号
+    
+    WeChat->>Backend: 发送关注事件回调<br/>(包含openid、用户信息等)
+    
+    Backend->>Backend: 处理用户注册/登录逻辑<br/>1. 检查openid是否存在<br/>2. 新用户则注册<br/>3. 老用户则直接登录<br/>4. 生成JWT Token
+    
+    Backend->>WS: 通过WebSocket推送登录结果<br/>(JWT Token + 用户信息)
+    WS->>Frontend: 接收登录成功消息
+    Frontend->>Frontend: 保存JWT Token
+    Frontend->>User: 登录成功，跳转到主页面
 ```
-用户浏览器 <-> 前端页面 <-> 后端API <-> 微信开放平台
+
+### 2.2 整体架构图
+```
+用户浏览器 <-> 前端页面 <-> 后端API <-> 微信公众号
                 |           |
                 |           v
                 |        Redis缓存
@@ -34,12 +66,11 @@
                 |        MySQL数据库
 ```
 
-### 2.2 核心组件
-1. **二维码生成服务** - 生成微信登录二维码
-2. **状态轮询服务** - 检查扫码状态
-3. **用户认证服务** - 处理用户登录逻辑
-4. **会话管理服务** - 管理用户会话
-5. **WebSocket服务** - 实时推送登录状态
+### 2.3 核心组件
+1. **二维码生成服务** - 生成微信公众号临时二维码
+2. **微信事件处理服务** - 处理公众号关注事件回调
+3. **用户认证服务** - 处理用户注册/登录逻辑
+4. **WebSocket服务** - 实时推送登录状态和结果
 
 ## 3. 数据库设计
 
@@ -55,67 +86,39 @@ CREATE TABLE wechat_users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     uid BIGINT COMMENT '关联用户ID，关联users表的id字段',
     openid VARCHAR(64) UNIQUE NOT NULL COMMENT '微信OpenID',
-    unionid VARCHAR(64) COMMENT '微信UnionID',
     nickname VARCHAR(100) COMMENT '微信昵称',
     avatar_url TEXT COMMENT '微信头像URL',
-    gender TINYINT DEFAULT 0 COMMENT '性别 0-未知 1-男 2-女',
-    country VARCHAR(50) COMMENT '国家',
-    province VARCHAR(50) COMMENT '省份',
-    city VARCHAR(50) COMMENT '城市',
-    language VARCHAR(20) COMMENT '语言',
-    session_key VARCHAR(100) COMMENT '会话密钥',
-    access_token VARCHAR(500) COMMENT '访问令牌',
-    refresh_token VARCHAR(500) COMMENT '刷新令牌',
-    expires_at TIMESTAMP NULL COMMENT '令牌过期时间',
+    subscribe_scene VARCHAR(50) COMMENT '关注场景',
+    qr_scene VARCHAR(100) COMMENT '二维码场景值',
+    subscribe_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
     last_login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '最后登录时间',
-    bind_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_uid (uid),
     INDEX idx_openid (openid),
-    INDEX idx_unionid (unionid),
-    INDEX idx_bind_at (bind_at),
+    INDEX idx_qr_scene (qr_scene),
+    INDEX idx_subscribe_time (subscribe_time),
     FOREIGN KEY (uid) REFERENCES users(id) ON DELETE SET NULL
 );
 ```
 
-### 3.3 用户登录方式表 (user_login_types)
-```sql
-CREATE TABLE user_login_types (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL COMMENT '用户ID',
-    login_type ENUM('phone', 'wechat', 'both') DEFAULT 'phone' COMMENT '登录方式',
-    wechat_user_id BIGINT COMMENT '关联的微信用户ID',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_login_type (login_type),
-    INDEX idx_wechat_user_id (wechat_user_id),
-    UNIQUE KEY uk_user_id (user_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (wechat_user_id) REFERENCES wechat_users(id) ON DELETE SET NULL
-);
+### 3.3 登录会话缓存 (Redis)
+```
+# Redis中存储的登录会话数据结构
+Key: wechat_login:session:{session_id}
+Value: {
+    "session_id": "string",
+    "qr_scene": "string",        // 二维码场景值
+    "status": "pending|success|expired",
+    "user_id": "number",         // 登录成功后的用户ID
+    "openid": "string",          // 微信openid
+    "created_at": "timestamp",
+    "expires_at": "timestamp"
+}
+Expire: 600 秒（10分钟）
 ```
 
-### 3.2 登录会话表 (login_sessions)
-```sql
-CREATE TABLE login_sessions (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    session_id VARCHAR(64) UNIQUE NOT NULL COMMENT '会话ID',
-    user_id BIGINT COMMENT '用户ID',
-    qr_code VARCHAR(100) COMMENT '二维码标识',
-    status ENUM('pending', 'scanned', 'confirmed', 'expired', 'failed') DEFAULT 'pending',
-    ip_address VARCHAR(45) COMMENT 'IP地址',
-    user_agent TEXT COMMENT '用户代理',
-    expires_at TIMESTAMP NOT NULL COMMENT '过期时间',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_session_id (session_id),
-    INDEX idx_qr_code (qr_code),
-    INDEX idx_status (status),
-    INDEX idx_expires_at (expires_at)
-);
-```
+
 
 ## 4. API 接口设计
 
@@ -127,231 +130,170 @@ POST /api/auth/wechat/qr-code
 **请求参数：**
 ```json
 {
-    "redirect_uri": "string", // 登录成功后的跳转地址
-    "state": "string"         // 自定义状态参数
+    "redirect_uri": "string" // 登录成功后的跳转地址（可选）
 }
 ```
 
 **响应数据：**
 ```json
 {
-    "code": 200,
-    "message": "success",
+    "success": true,
+    "message": "二维码生成成功",
     "data": {
-        "qr_code": "string",      // 二维码标识
         "qr_url": "string",       // 二维码图片URL
-        "session_id": "string",   // 会话ID
-        "expires_in": 300         // 过期时间(秒)
+        "session_id": "string",   // 会话ID（用于WebSocket连接）
+        "qr_scene": "string",     // 二维码场景值
+        "expires_in": 600         // 过期时间(秒)
     }
 }
 ```
 
-### 4.2 检查登录状态
+### 4.2 微信公众号事件回调
 ```
-GET /api/auth/wechat/status/{session_id}
+POST /api/auth/wechat/callback
+```
+
+**说明：** 此接口由微信公众号平台调用，用于接收用户关注事件
+
+**请求数据：** 微信标准XML格式
+```xml
+<xml>
+    <ToUserName><![CDATA[公众号原始ID]]></ToUserName>
+    <FromUserName><![CDATA[用户openid]]></FromUserName>
+    <CreateTime>1234567890</CreateTime>
+    <MsgType><![CDATA[event]]></MsgType>
+    <Event><![CDATA[subscribe]]></Event>
+    <EventKey><![CDATA[qrscene_场景值]]></EventKey>
+    <Ticket><![CDATA[二维码ticket]]></Ticket>
+</xml>
 ```
 
 **响应数据：**
+```xml
+<xml>
+    <ToUserName><![CDATA[用户openid]]></ToUserName>
+    <FromUserName><![CDATA[公众号原始ID]]></FromUserName>
+    <CreateTime>1234567890</CreateTime>
+    <MsgType><![CDATA[text]]></MsgType>
+    <Content><![CDATA[欢迎关注！您已成功登录。]]></Content>
+</xml>
+```
+
+### 4.3 WebSocket 连接
+```
+WebSocket: /ws/auth/{session_id}
+```
+
+**说明：** 前端通过此WebSocket连接接收实时登录结果
+
+**连接建立后接收的消息格式：**
 ```json
 {
-    "code": 200,
-    "message": "success",
+    "type": "login_result",
     "data": {
-        "status": "pending|scanned|confirmed|expired|failed",
+        "status": "success|failed|expired",
+        "message": "string",
         "user_info": {
             "user_id": "number",
             "nickname": "string",
-            "avatar_url": "string"
-        },
-        "redirect_url": "string"
-    }
-}
-```
-
-### 4.3 确认登录
-```
-POST /api/auth/wechat/confirm
-```
-
-**请求参数：**
-```json
-{
-    "session_id": "string",
-    "action": "confirm|cancel"
-}
-```
-
-### 4.4 获取用户信息
-```
-GET /api/user/profile
-```
-
-**请求头：**
-```
-Authorization: Bearer {token}
-```
-
-**响应数据：**
-```json
-{
-    "success": true,
-    "message": "success",
-    "data": {
-        "id": "number",
-        "phone": "string",
-        "nickname": "string",
-        "avatar_url": "string",
-        "status": "number",
-        "login_type": "phone|wechat|both",
-        "wechat_info": {
-            "wechat_user_id": "number",
-            "openid": "string",
-            "nickname": "string",
             "avatar_url": "string",
-            "gender": "number",
-            "country": "string",
-            "province": "string",
-            "city": "string",
-            "bind_at": "string"
+            "login_type": "wechat"
         },
-        "created_at": "string",
-        "updated_at": "string",
-        "last_login_at": "string"
+        "token": "jwt_token_string",
+        "expires_in": 86400
     }
 }
 ```
 
-### 4.5 绑定微信账号
-```
-POST /api/user/bind-wechat
-```
 
-**请求头：**
-```
-Authorization: Bearer {token}
-```
-
-**请求参数：**
-```json
-{
-    "qr_code": "string",
-    "session_id": "string"
-}
-```
-
-**响应数据：**
-```json
-{
-    "success": true,
-    "message": "微信账号绑定成功",
-    "data": {
-        "user_id": "number",
-        "login_type": "both",
-        "wechat_info": {
-            "openid": "string",
-            "nickname": "string",
-            "avatar_url": "string"
-        }
-    }
-}
-```
-
-### 4.6 解绑微信账号
-```
-POST /api/user/unbind-wechat
-```
-
-**请求头：**
-```
-Authorization: Bearer {token}
-```
-
-**响应数据：**
-```json
-{
-    "success": true,
-    "message": "微信账号解绑成功",
-    "data": {
-        "user_id": "number",
-        "login_type": "phone"
-    }
-}
-```
 
 ## 5. 核心代码结构
 
 ### 5.1 模型层 (Models)
 - `User` - 保持现有用户模型不变
 - `WechatUser` - 微信用户模型，通过uid字段关联User
-- `UserLoginType` - 用户登录方式模型
-- `LoginSession` - 登录会话模型
+- `LoginSession` - Redis中的登录会话结构
 
 ### 5.2 服务层 (Services)
 - `UserService` - 扩展现有用户服务，支持微信登录
-- `WechatAuthService` - 微信认证服务
-- `QRCodeService` - 二维码生成服务
-- `SessionService` - 会话管理服务
-- `KVService` - 扩展现有KV服务，支持微信会话存储
+- `WechatAuthService` - 微信公众号认证服务
+- `WechatQRService` - 微信临时二维码生成服务
+- `WechatCallbackService` - 微信事件回调处理服务
+- `WebSocketService` - WebSocket连接管理和消息推送服务
+- `SessionService` - Redis会话管理服务
 
 ### 5.3 控制器层 (Controllers)
-- `LoginController` - 扩展现有登录控制器
-- `WechatAuthController` - 微信认证控制器
-- `UserController` - 用户信息管理控制器
+- `WechatAuthController` - 微信登录相关接口
+- `WechatCallbackController` - 微信事件回调处理
+- `WebSocketController` - WebSocket连接处理
 
 ### 5.4 中间件 (Middleware)
 - `AuthMiddleware` - 扩展现有认证中间件
+- `WechatSignatureMiddleware` - 微信签名验证中间件
 - `RateLimitMiddleware` - 限流中间件
 
 ### 5.5 数据仓库 (Repository)
 - `UserRepository` - 保持现有用户仓库不变
 - `WechatUserRepository` - 微信用户仓库
-- `UserLoginTypeRepository` - 用户登录方式仓库
+- `SessionRepository` - Redis会话数据操作
 
 ## 6. 实现流程
 
-### 6.1 微信扫码登录流程
-1. 前端请求生成微信登录二维码
-2. 后端生成唯一session_id和qr_code
-3. 调用微信API获取二维码
-4. 将信息存储到Redis和数据库
-5. 返回二维码信息给前端
-6. 用户扫描二维码
-7. 微信服务器回调我们的接口
-8. 更新登录状态为"scanned"
-9. 通过WebSocket推送状态给前端
-10. 用户确认登录
-11. 获取微信用户信息
-12. 检查wechat_users表中是否存在该openid
-13. 如果存在且已绑定用户，直接登录
-14. 如果存在但未绑定用户，创建绑定关系
-15. 如果不存在，创建新的wechat_user记录
-16. 更新user_login_types表的登录方式
-17. 生成JWT Token（与现有登录系统兼容）
-18. 返回登录成功信息
+### 6.1 微信公众号扫码登录流程
+1. **前端请求生成二维码**
+   - 调用 `POST /api/auth/wechat/qr-code` 接口
+   - 后端生成唯一 `session_id` 和 `qr_scene`
+   - 调用微信公众号API生成临时二维码
+   - 将会话信息存储到Redis缓存
+   - 返回二维码URL和session_id给前端
 
-### 6.2 账号绑定流程
-1. 已登录用户请求绑定微信账号
-2. 生成微信登录二维码
-3. 用户扫描并确认
-4. 获取微信用户信息
-5. 检查wechat_users表中该openid是否已被其他用户绑定
-6. 如果未绑定，创建wechat_user记录并设置uid为当前用户ID
-7. 如果已绑定其他用户，返回错误
-8. 更新user_login_types表的login_type为"both"
-9. 返回绑定成功信息
+2. **前端建立WebSocket连接**
+   - 使用session_id连接 `/ws/auth/{session_id}`
+   - 等待接收登录结果推送
 
-### 6.3 状态检查流程
-1. 前端定期轮询登录状态
-2. 后端检查Redis中的状态
-3. 如果状态变化，返回最新状态
-4. 支持WebSocket实时推送
+3. **用户扫码关注**
+   - 用户扫描二维码
+   - 跳转到公众号关注页面
+   - 用户点击关注公众号
 
-### 6.4 多登录方式兼容流程
-1. 用户可通过手机号验证码登录（现有功能）
-2. 用户可通过微信扫码登录（新增功能）
-3. 用户可绑定两种登录方式
-4. 统一使用JWT Token进行身份验证
-5. 支持登录方式切换和账号解绑
+4. **微信事件回调处理**
+   - 微信公众号向 `/api/auth/wechat/callback` 发送关注事件
+   - 后端解析XML获取openid和qr_scene
+   - 根据qr_scene找到对应的session_id
+
+5. **用户认证和注册/登录**
+   - 检查wechat_users表中是否存在该openid
+   - **新用户**：创建User记录和WechatUser记录，建立关联
+   - **老用户**：直接使用已有的用户信息
+   - 生成JWT Token（与现有登录系统兼容）
+
+6. **实时推送登录结果**
+   - 通过WebSocket推送登录成功消息
+   - 包含JWT Token和用户信息
+   - 前端接收后保存Token并跳转
+
+### 6.2 用户状态管理流程
+1. **新用户注册流程**
+   - 自动创建users表记录（基础用户信息）
+   - 创建wechat_users表记录（微信相关信息）
+   - 通过uid字段关联两张表
+
+2. **老用户登录流程**
+   - 通过openid查找wechat_users记录
+   - 获取关联的uid找到users表记录
+   - 更新last_login_at时间
+   - 生成新的JWT Token
+
+3. **会话管理流程**
+   - Redis存储临时会话信息（10分钟过期）
+   - WebSocket连接管理活跃会话
+   - 登录成功后清理临时会话数据
+
+### 6.3 多登录方式兼容流程
+1. **保持现有手机号登录**：完全不变，继续使用现有逻辑
+2. **新增微信登录**：通过openid关联到同一用户
+3. **统一认证机制**：都使用相同的JWT Token格式
+4. **用户体系统一**：微信用户和手机号用户共享users表
 
 ## 7. 安全考虑
 
@@ -373,20 +315,26 @@ Authorization: Bearer {token}
 ## 8. 配置要求
 
 ### 8.1 扩展现有配置文件
-在 `src/config/config.yaml` 中添加微信配置：
+在 `src/config/config.yaml` 中添加微信公众号配置：
 
 ```yaml
 # 现有配置
 jwt_secret: "${JWT_SECRET}"
 
-# 新增微信配置
+# 新增微信公众号配置
 wechat:
-  app_id: "${WECHAT_APP_ID}"
-  app_secret: "${WECHAT_APP_SECRET}"
-  redirect_uri: "${WECHAT_REDIRECT_URI}"
-  scope: "snsapi_login"
-  qr_expires_in: 300  # 二维码过期时间(秒)
-  session_expires_in: 600  # 会话过期时间(秒)
+  app_id: "${WECHAT_APP_ID}"           # 公众号AppID
+  app_secret: "${WECHAT_APP_SECRET}"   # 公众号AppSecret
+  token: "${WECHAT_TOKEN}"             # 公众号Token（用于验证签名）
+  callback_url: "${WECHAT_CALLBACK_URL}" # 事件回调URL
+  qr_expires_in: 600                   # 临时二维码过期时间(秒)
+  session_expires_in: 600              # 登录会话过期时间(秒)
+
+# WebSocket配置
+websocket:
+  read_buffer_size: 1024
+  write_buffer_size: 1024
+  check_origin: true
 
 # Redis配置（扩展现有配置）
 redis:
@@ -404,10 +352,11 @@ redis:
 # 现有配置
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
-# 新增微信配置
-WECHAT_APP_ID=your_wechat_app_id
-WECHAT_APP_SECRET=your_wechat_app_secret
-WECHAT_REDIRECT_URI=https://your-domain.com/api/auth/wechat/callback
+# 新增微信公众号配置
+WECHAT_APP_ID=wx1234567890abcdef        # 从微信公众平台获取
+WECHAT_APP_SECRET=1234567890abcdef12345678  # 从微信公众平台获取
+WECHAT_TOKEN=your_wechat_token_here      # 自定义Token，用于验证消息来源
+WECHAT_CALLBACK_URL=https://your-domain.com/api/auth/wechat/callback
 
 # Redis配置
 REDIS_HOST=localhost
@@ -420,26 +369,33 @@ REDIS_PASSWORD=
 
 ```go
 type WechatConfig struct {
-    AppID          string `mapstructure:"app_id"`
-    AppSecret      string `mapstructure:"app_secret"`
-    RedirectURI    string `mapstructure:"redirect_uri"`
-    Scope          string `mapstructure:"scope"`
-    QRExpiresIn    int    `mapstructure:"qr_expires_in"`
-    SessionExpiresIn int  `mapstructure:"session_expires_in"`
+    AppID            string `mapstructure:"app_id"`
+    AppSecret        string `mapstructure:"app_secret"`
+    Token            string `mapstructure:"token"`
+    CallbackURL      string `mapstructure:"callback_url"`
+    QRExpiresIn      int    `mapstructure:"qr_expires_in"`
+    SessionExpiresIn int    `mapstructure:"session_expires_in"`
+}
+
+type WebSocketConfig struct {
+    ReadBufferSize  int  `mapstructure:"read_buffer_size"`
+    WriteBufferSize int  `mapstructure:"write_buffer_size"`
+    CheckOrigin     bool `mapstructure:"check_origin"`
 }
 
 type RedisConfig struct {
-    Host     string `mapstructure:"host"`
-    Port     int    `mapstructure:"port"`
-    DB       int    `mapstructure:"db"`
-    Password string `mapstructure:"password"`
+    Host      string `mapstructure:"host"`
+    Port      int    `mapstructure:"port"`
+    DB        int    `mapstructure:"db"`
+    Password  string `mapstructure:"password"`
     KeyPrefix string `mapstructure:"key_prefix"`
 }
 
 type AppConfig struct {
-    JWTSecret string       `mapstructure:"jwt_secret"`
-    Wechat    WechatConfig `mapstructure:"wechat"`
-    Redis     RedisConfig  `mapstructure:"redis"`
+    JWTSecret string          `mapstructure:"jwt_secret"`
+    Wechat    WechatConfig    `mapstructure:"wechat"`
+    WebSocket WebSocketConfig `mapstructure:"websocket"`
+    Redis     RedisConfig     `mapstructure:"redis"`
 }
 ```
 
@@ -449,55 +405,63 @@ type AppConfig struct {
 - Go 1.24+
 - MySQL 8.0+
 - Redis 6.0+
-- 微信开放平台账号
+- 微信公众号（已认证）
+- HTTPS域名（微信回调要求）
 
 ### 9.2 部署步骤
-1. **配置微信开放平台应用**
-   - 注册微信开放平台账号
-   - 创建网站应用
-   - 配置授权回调域名
-   - 获取AppID和AppSecret
+1. **配置微信公众号**
+   - 登录微信公众平台（mp.weixin.qq.com）
+   - 获取AppID和AppSecret（开发 > 基本配置）
+   - 配置服务器地址：https://your-domain.com/api/auth/wechat/callback
+   - 设置Token并启用服务器配置
+   - 配置IP白名单（如果需要）
 
-2. **更新配置文件**
+2. **配置服务器回调验证**
+   - 微信会发送GET请求验证服务器
+   - 需要正确响应echostr参数
+   - 验证signature、timestamp、nonce
+
+3. **更新配置文件**
    - 修改 `src/config/config.yaml`
    - 设置 `.env.api` 环境变量
    - 配置Redis连接信息
+   - 配置WebSocket相关参数
 
-3. **数据库迁移**
+4. **数据库迁移**
    ```sql
    -- 创建微信用户表
    CREATE TABLE wechat_users (
        id BIGINT PRIMARY KEY AUTO_INCREMENT,
        uid BIGINT COMMENT '关联用户ID',
        openid VARCHAR(64) UNIQUE NOT NULL COMMENT '微信OpenID',
-       -- ... (其他字段)
+       nickname VARCHAR(100) COMMENT '微信昵称',
+       avatar_url TEXT COMMENT '微信头像URL',
+       subscribe_scene VARCHAR(50) COMMENT '关注场景',
+       qr_scene VARCHAR(100) COMMENT '二维码场景值',
+       subscribe_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+       last_login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '最后登录时间',
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+       INDEX idx_uid (uid),
+       INDEX idx_openid (openid),
+       INDEX idx_qr_scene (qr_scene),
+       FOREIGN KEY (uid) REFERENCES users(id) ON DELETE SET NULL
    );
-   
-   -- 创建用户登录方式表
-   CREATE TABLE user_login_types (
-       id BIGINT PRIMARY KEY AUTO_INCREMENT,
-       user_id BIGINT NOT NULL COMMENT '用户ID',
-       login_type ENUM('phone', 'wechat', 'both') DEFAULT 'phone' COMMENT '登录方式',
-       wechat_user_id BIGINT COMMENT '关联的微信用户ID',
-       -- ... (其他字段)
-   );
-   
-   -- 为现有用户初始化登录方式
-   INSERT INTO user_login_types (user_id, login_type) 
-   SELECT id, 'phone' FROM users;
    ```
 
-4. **启动应用服务**
+5. **启动应用服务**
    ```bash
    go run src/main.go
    ```
 
 ### 9.3 监控指标
 - 二维码生成成功率
+- 微信关注事件处理成功率
 - 微信登录成功率
+- WebSocket连接成功率
 - 手机号登录成功率（现有功能）
-- 账号绑定成功率
 - 接口响应时间
+- Redis缓存命中率
 - 错误率统计
 
 ### 9.4 兼容性说明
