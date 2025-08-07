@@ -26,56 +26,56 @@
 
 ### ⚙️ 核心服务 (重头戏)
 
-#### 4. 微信二维码服务
-- [ ] 写个 `WechatQRService`，调用微信API生成临时二维码
-- [ ] 生成唯一的场景值 (qr_scene)
-- [ ] 处理二维码过期逻辑
+#### 4. 微信二维码服务 ✅
+- [x] 写个 `WechatQRService`，调用微信API生成临时二维码
+- [x] 生成唯一的场景值 (qr_scene)
+- [x] 处理二维码过期逻辑
 
-#### 5. 微信事件回调服务
-- [ ] 搞个 `WechatCallbackService` 处理微信的XML回调
-- [ ] 解析关注事件，提取 openid 和场景值
-- [ ] 自动回复消息给用户
+#### 5. 微信事件回调服务 ✅
+- [x] 搞个 `WechatCallbackService` 处理微信的XML回调
+- [x] 解析关注事件，提取 openid 和场景值
+- [x] 自动回复消息给用户
 
-#### 6. WebSocket服务
-- [ ] 实现 `WebSocketService` 管理连接
-- [ ] 消息推送功能
-- [ ] 连接池管理
+#### 6. WebSocket服务 ✅
+- [x] 实现 `WebSocketService` 管理连接
+- [x] 消息推送功能
+- [x] 连接池管理
 
-#### 7. 会话管理
-- [ ] `SessionService` 操作Redis缓存
-- [ ] 会话过期清理
-- [ ] 状态转换管理
+#### 7. 会话管理 ✅
+- [x] `SessionService` 操作Redis缓存
+- [x] 会话过期清理
+- [x] 状态转换管理
 
-#### 8. 用户认证扩展
-- [ ] 扩展现有 `UserService`
-- [ ] 微信用户注册/登录逻辑
-- [ ] JWT生成 (保持与现有系统兼容)
+#### 8. 用户认证扩展 ✅
+- [x] 扩展现有 `UserService`
+- [x] 微信用户注册/登录逻辑
+- [x] JWT生成 (保持与现有系统兼容)
 
 ### 🗄️ 数据层
 
-#### 9. 数据仓库
-- [ ] `WechatUserRepository` - 微信用户CRUD
-- [ ] `SessionRepository` - Redis操作封装
-- [ ] 优化查询性能
+#### 9. 数据仓库 ✅
+- [x] `WechatUserRepository` - 微信用户CRUD
+- [x] `SessionRepository` - Redis操作封装 (通过扩展KVService实现)
+- [x] 优化查询性能
 
-#### 10. 中间件
-- [ ] 微信签名验证中间件
-- [ ] API限流中间件
-- [ ] 请求日志中间件
+#### 10. 中间件 ✅
+- [x] 微信签名验证中间件
+- [x] API限流中间件
+- [x] 请求日志中间件
 
-### 🌐 API接口 (对外的门面)
+### 🌐 API接口 (对外的门面) ✅
 
-#### 11. 二维码生成接口
-- [ ] `POST /api/auth/wechat/qr-code`
-- [ ] 参数验证和错误处理
+#### 11. 二维码生成接口 ✅
+- [x] `POST /api/auth/wechat/qr-code`
+- [x] 参数验证和错误处理
 
-#### 12. 微信回调接口
-- [ ] `GET /api/auth/wechat/callback` (服务器验证)
-- [ ] `POST /api/auth/wechat/callback` (事件处理)
+#### 12. 微信回调接口 ✅
+- [x] `GET /api/auth/wechat/callback` (服务器验证)
+- [x] `POST /api/auth/wechat/callback` (事件处理)
 
-#### 13. WebSocket接口
-- [ ] `/ws/auth/{session_id}` 端点
-- [ ] 连接建立和消息推送
+#### 13. WebSocket接口 ✅
+- [x] `/ws/auth/{session_id}` 端点
+- [x] 连接建立和消息推送
 
 ### 🔐 安全相关
 

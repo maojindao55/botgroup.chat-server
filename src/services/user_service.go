@@ -37,21 +37,29 @@ type UserService interface {
 	UpdateNickname(userID uint, nickname string) error
 	UpdateAvatar(userID uint, avatarURL string) error
 	GetUserByID(userID uint) (*models.User, error)
+
+	// 微信登录相关方法
+	LoginWithWechat(openID, nickname, avatarURL, qrScene string) (*models.UserData, error)
+	GetWechatUserByOpenID(openID string) (*models.WechatUser, error)
+	CreateWechatUser(openID, nickname, avatarURL, qrScene string, userID uint) (*models.WechatUser, error)
+	GenerateJWTToken(userID uint) (string, int, error)
 }
 
 // userService 用户服务实现
 type userService struct {
-	userRepo  repository.UserRepository
-	kvService KVService
-	jwtSecret string
+	userRepo       repository.UserRepository
+	wechatUserRepo repository.WechatUserRepository
+	kvService      KVService
+	jwtSecret      string
 }
 
 // NewUserService 创建用户服务实例
 func NewUserService(jwtSecret string, redisConfig config.RedisConfig) UserService {
 	return &userService{
-		userRepo:  repository.NewUserRepository(),
-		kvService: NewKVService(redisConfig),
-		jwtSecret: jwtSecret,
+		userRepo:       repository.NewUserRepository(),
+		wechatUserRepo: repository.NewWechatUserRepository(),
+		kvService:      NewKVService(redisConfig),
+		jwtSecret:      jwtSecret,
 	}
 }
 func (s *userService) GetUserByID(userID uint) (*models.User, error) {
@@ -316,4 +324,139 @@ func (s *userService) generateSignature(data string) (string, error) {
 	// 移除填充字符
 	signature = strings.TrimRight(signature, "=")
 	return signature, nil
+}
+
+// LoginWithWechat 微信登录
+func (s *userService) LoginWithWechat(openID, nickname, avatarURL, qrScene string) (*models.UserData, error) {
+	// 1. 查找是否已存在该微信用户
+	wechatUser, err := s.wechatUserRepo.GetWechatUserByOpenID(openID)
+	if err != nil {
+		return nil, fmt.Errorf("查找微信用户失败: %v", err)
+	}
+
+	var user *models.User
+
+	if wechatUser != nil {
+		// 用户已存在，获取关联的基础用户信息
+		user, err = s.userRepo.GetUserByID(wechatUser.UID)
+		if err != nil {
+			return nil, fmt.Errorf("获取用户信息失败: %v", err)
+		}
+
+		// 更新微信用户信息
+		wechatUser.Nickname = nickname
+		wechatUser.AvatarURL = avatarURL
+		wechatUser.QRScene = qrScene
+		wechatUser.LastLoginAt = time.Now()
+
+		err = s.wechatUserRepo.UpdateWechatUser(wechatUser)
+		if err != nil {
+			return nil, fmt.Errorf("更新微信用户信息失败: %v", err)
+		}
+	} else {
+		// 用户不存在，创建新用户
+		// 首先创建基础用户
+		user, err = s.userRepo.CreateUser("", nickname) // 微信用户没有手机号
+		if err != nil {
+			return nil, fmt.Errorf("创建基础用户失败: %v", err)
+		}
+
+		// 创建微信用户记录
+		wechatUser = &models.WechatUser{
+			UID:           user.ID,
+			OpenID:        openID,
+			Nickname:      nickname,
+			AvatarURL:     avatarURL,
+			QRScene:       qrScene,
+			SubscribeTime: time.Now(),
+			LastLoginAt:   time.Now(),
+		}
+
+		err = s.wechatUserRepo.CreateWechatUser(wechatUser)
+		if err != nil {
+			return nil, fmt.Errorf("创建微信用户失败: %v", err)
+		}
+	}
+
+	// 生成JWT token
+	token, _, err := s.GenerateJWTToken(user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("生成JWT token失败: %v", err)
+	}
+
+	return &models.UserData{
+		User:  user,
+		Token: token,
+	}, nil
+}
+
+// GetWechatUserByOpenID 根据OpenID获取微信用户
+func (s *userService) GetWechatUserByOpenID(openID string) (*models.WechatUser, error) {
+	return s.wechatUserRepo.GetWechatUserByOpenID(openID)
+}
+
+// CreateWechatUser 创建微信用户
+func (s *userService) CreateWechatUser(openID, nickname, avatarURL, qrScene string, userID uint) (*models.WechatUser, error) {
+	wechatUser := &models.WechatUser{
+		UID:           userID,
+		OpenID:        openID,
+		Nickname:      nickname,
+		AvatarURL:     avatarURL,
+		QRScene:       qrScene,
+		SubscribeTime: time.Now(),
+		LastLoginAt:   time.Now(),
+	}
+
+	err := s.wechatUserRepo.CreateWechatUser(wechatUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return wechatUser, nil
+}
+
+// GenerateJWTToken 生成JWT Token（提取为公共方法）
+func (s *userService) GenerateJWTToken(userID uint) (string, int, error) {
+	expiresIn := 7 * 24 * 60 * 60 // 7天，单位：秒
+	expTime := time.Now().Add(time.Duration(expiresIn) * time.Second).Unix()
+
+	claims := JWTPayload{
+		UserID: fmt.Sprintf("%d", userID),
+		Exp:    expTime,
+		Iat:    time.Now().Unix(),
+	}
+
+	// 构建完整token
+	header := map[string]string{
+		"alg": "HS256",
+		"typ": "JWT",
+	}
+
+	headerJSON, err := json.Marshal(header)
+	if err != nil {
+		return "", 0, err
+	}
+
+	claimsJSON, err := json.Marshal(claims)
+	if err != nil {
+		return "", 0, err
+	}
+
+	// Base64URL 编码
+	headerB64 := base64.URLEncoding.EncodeToString(headerJSON)
+	claimsB64 := base64.URLEncoding.EncodeToString(claimsJSON)
+
+	// 移除填充字符
+	headerB64 = strings.TrimRight(headerB64, "=")
+	claimsB64 = strings.TrimRight(claimsB64, "=")
+
+	// 签名
+	data := headerB64 + "." + claimsB64
+	signature, err := s.generateSignature(data)
+	if err != nil {
+		return "", 0, err
+	}
+
+	token := data + "." + signature
+	return token, expiresIn, nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"project/src/config"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +22,7 @@ type KVService interface {
 	Set(key, value string, ttl time.Duration) error
 	Get(key string) (string, error)
 	Delete(key string) error
+	Keys(pattern string) ([]string, error) // 新增：获取匹配模式的所有键
 	Close() error
 }
 
@@ -90,6 +92,15 @@ func (r *redisKVService) Delete(key string) error {
 	return r.client.Del(r.ctx, key).Err()
 }
 
+// Keys Redis版本获取匹配模式的所有键
+func (r *redisKVService) Keys(pattern string) ([]string, error) {
+	keys, err := r.client.Keys(r.ctx, pattern).Result()
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
+}
+
 // Close Redis版本关闭连接
 func (r *redisKVService) Close() error {
 	return r.client.Close()
@@ -147,6 +158,36 @@ func (kv *memoryKVService) Delete(key string) error {
 
 	delete(kv.storage, key)
 	return nil
+}
+
+// Keys 内存版本获取匹配模式的所有键（简单的前缀匹配）
+func (kv *memoryKVService) Keys(pattern string) ([]string, error) {
+	kv.mutex.RLock()
+	defer kv.mutex.RUnlock()
+
+	var keys []string
+	// 简单的模式匹配，只支持 "*" 结尾的前缀匹配
+	if pattern == "*" {
+		// 返回所有键
+		for key := range kv.storage {
+			keys = append(keys, key)
+		}
+	} else if strings.HasSuffix(pattern, "*") {
+		// 前缀匹配
+		prefix := strings.TrimSuffix(pattern, "*")
+		for key := range kv.storage {
+			if strings.HasPrefix(key, prefix) {
+				keys = append(keys, key)
+			}
+		}
+	} else {
+		// 精确匹配
+		if _, exists := kv.storage[pattern]; exists {
+			keys = append(keys, pattern)
+		}
+	}
+
+	return keys, nil
 }
 
 // Close 内存版本关闭（无操作）

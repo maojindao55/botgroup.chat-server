@@ -97,6 +97,45 @@ func registerRoutes(r *gin.Engine) {
 		apiGroup.GET("/captcha", api.CaptchaHandler)
 		apiGroup.POST("/captcha/check", api.CaptchaCheckHandler)
 
+		// 微信登录相关接口（无需认证）
+		authGroup := apiGroup.Group("/auth")
+		authGroup.Use(middleware.SecurityHeaders()) // 安全头
+		{
+			// 微信扫码登录
+			wechatGroup := authGroup.Group("/wechat")
+			wechatGroup.Use(middleware.WechatCORS()) // 微信专用CORS
+			{
+				// 生成二维码（需要限流）
+				wechatGroup.POST("/qr-code",
+					middleware.WechatQRCodeRateLimit(),
+					api.WechatQRCodeHandler)
+
+				// 微信回调（需要签名验证和限流）
+				wechatGroup.GET("/callback",
+					middleware.WechatCallbackRateLimit(),
+					api.WechatCallbackHandler)
+
+				wechatGroup.POST("/callback",
+					middleware.WechatCallbackRateLimit(),
+					middleware.WechatSignatureVerify(),
+					api.WechatCallbackHandler)
+
+				// 状态查询（需要限流）
+				wechatGroup.GET("/status/:session_id",
+					middleware.WechatStatusRateLimit(),
+					api.WechatLoginStatusHandler)
+
+				// 测试接口（仅开发环境，需要限流）
+				wechatGroup.GET("/test",
+					middleware.WechatQRCodeRateLimit(),
+					api.WechatLoginTestHandler)
+
+				// 调试接口（仅开发环境）
+				wechatGroup.GET("/debug/token", api.WechatTokenDebugHandler)
+				wechatGroup.POST("/debug/simulate", api.WechatCallbackSimulateHandler)
+			}
+		}
+
 		// 需要认证的用户接口
 		userGroup := apiGroup.Group("/")
 		userGroup.Use(middleware.AuthMiddleware())
@@ -113,5 +152,11 @@ func registerRoutes(r *gin.Engine) {
 			// 上传相关接口
 			userGroup.POST("/user/upload", api.UploadHandler)
 		}
+	}
+
+	// WebSocket路由（在API组之外）
+	wsGroup := r.Group("/ws")
+	{
+		wsGroup.GET("/auth/:session_id", api.WebSocketHandler) // WebSocket连接
 	}
 }
