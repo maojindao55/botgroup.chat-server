@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信扫码登录测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .qr-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .qr-code {
+            max-width: 256px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.pending {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .status.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .user-info {
+            background-color: #e7f3ff;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .connection-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>微信扫码登录测试页面</h1>
+        
+        <div class="qr-section">
+            <h3>扫描二维码登录</h3>
+            <div id="qr-container" style="display: none;">
+                <img id="qr-image" class="qr-code" alt="微信二维码">
+                <p>请使用微信扫描上方二维码关注公众号完成登录</p>
+                <p>二维码有效期：<span id="expires-time">600</span> 秒</p>
+            </div>
+            
+            <div id="status" class="status pending" style="display: none;">
+                等待扫码...
+            </div>
+            
+            <div id="user-info" class="user-info" style="display: none;">
+                <h4>登录成功！</h4>
+                <p><strong>用户ID:</strong> <span id="user-id"></span></p>
+                <p><strong>昵称:</strong> <span id="user-nickname"></span></p>
+                <p><strong>头像:</strong> <img id="user-avatar" style="width: 50px; height: 50px; border-radius: 25px;"></p>
+                <p><strong>Token:</strong> <span id="user-token" style="word-break: break-all; font-family: monospace; font-size: 12px;"></span></p>
+            </div>
+        </div>
+        
+        <div>
+            <button class="button" onclick="generateQRCode()">生成二维码</button>
+            <button class="button" onclick="testLogin()">模拟登录（旧）</button>
+            <button class="button" onclick="simulateCallback()">模拟回调（新）</button>
+            <button class="button" onclick="clearLogs()">清空日志</button>
+            <span id="ws-status" class="connection-status disconnected">WebSocket: 未连接</span>
+        </div>
+        
+        <div>
+            <h3>操作日志</h3>
+            <div id="logs" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentQRScene = null;
+        let websocket = null;
+        let pollInterval = null;
+
+        // 服务器地址配置
+        const API_BASE = 'http://localhost:8080/api';
+        const WS_BASE = 'ws://localhost:8080/ws';
+
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'pending') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        function updateWSStatus(connected) {
+            const statusEl = document.getElementById('ws-status');
+            if (connected) {
+                statusEl.textContent = 'WebSocket: 已连接';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = 'WebSocket: 未连接';
+                statusEl.className = 'connection-status disconnected';
+            }
+        }
+
+        async function generateQRCode() {
+            try {
+                log('正在生成二维码...');
+                
+                const response = await fetch(`${API_BASE}/auth/wechat/qr-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentSessionId = result.data.session_id;
+                    currentQRScene = result.data.qr_scene;
+                    
+                    // 显示二维码
+                    document.getElementById('qr-image').src = result.data.qr_url;
+                    document.getElementById('qr-container').style.display = 'block';
+                    document.getElementById('expires-time').textContent = result.data.expires_in;
+                    
+                    updateStatus('请扫描二维码', 'pending');
+                    log(`二维码生成成功，Session ID: ${currentSessionId}, QR Scene: ${currentQRScene}`);
+                    
+                    // 建立WebSocket连接
+                    connectWebSocket();
+                    
+                    // 开始轮询（作为WebSocket的备选方案）
+                    startPolling();
+                    
+                } else {
+                    log(`生成二维码失败: ${result.message}`);
+                    updateStatus('生成二维码失败', 'error');
+                }
+            } catch (error) {
+                log(`请求失败: ${error.message}`);
+                updateStatus('网络错误', 'error');
+            }
+        }
+
+        function connectWebSocket() {
+            if (!currentSessionId) return;
+            
+            try {
+                websocket = new WebSocket(`${WS_BASE}/auth/${currentSessionId}`);
+                
+                websocket.onopen = function() {
+                    log('WebSocket连接已建立');
+                    updateWSStatus(true);
+                };
+                
+                websocket.onmessage = function(event) {
+                    const message = JSON.parse(event.data);
+                    log(`收到WebSocket消息: ${JSON.stringify(message)}`);
+                    
+                    if (message.type === 'login_result') {
+                        handleLoginResult(message.data);
+                    }
+                };
+                
+                websocket.onclose = function() {
+                    log('WebSocket连接已关闭');
+                    updateWSStatus(false);
+                };
+                
+                websocket.onerror = function(error) {
+                    log(`WebSocket错误: ${error}`);
+                    updateWSStatus(false);
+                };
+                
+            } catch (error) {
+                log(`WebSocket连接失败: ${error.message}`);
+                updateWSStatus(false);
+            }
+        }
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            
+            pollInterval = setInterval(async () => {
+                if (!currentSessionId) return;
+                
+                try {
+                    const response = await fetch(`${API_BASE}/auth/wechat/status/${currentSessionId}`);
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        clearInterval(pollInterval);
+                        handleLoginResult(result.data);
+                    } else if (result.status === 'expired') {
+                        clearInterval(pollInterval);
+                        updateStatus('二维码已过期，请重新生成', 'error');
+                        log('会话已过期');
+                    }
+                } catch (error) {
+                    log(`轮询状态失败: ${error.message}`);
+                }
+            }, 2000); // 每2秒查询一次
+        }
+
+        function handleLoginResult(data) {
+            if (data.status === 'success') {
+                updateStatus('登录成功！', 'success');
+                
+                // 显示用户信息
+                document.getElementById('user-id').textContent = data.user.id;
+                document.getElementById('user-nickname').textContent = data.user.nickname;
+                document.getElementById('user-avatar').src = data.user.avatar || '';
+                document.getElementById('user-token').textContent = data.token;
+                document.getElementById('user-info').style.display = 'block';
+                
+                log(`登录成功！用户: ${data.user.nickname}`);
+                
+                // 保存token到localStorage
+                localStorage.setItem('wechat_token', data.token);
+                
+            } else {
+                updateStatus(`登录失败: ${data.message}`, 'error');
+                log(`登录失败: ${data.message}`);
+            }
+            
+            // 清理
+            if (pollInterval) clearInterval(pollInterval);
+            if (websocket) websocket.close();
+        }
+
+        async function testLogin() {
+            if (!currentSessionId) {
+                alert('请先生成二维码');
+                return;
+            }
+            
+            try {
+                log('模拟微信登录（旧方式）...');
+                
+                const testOpenId = 'test_openid_' + Date.now();
+                const response = await fetch(`${API_BASE}/auth/wechat/test?session_id=${currentSessionId}&openid=${testOpenId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    log('模拟登录触发成功，等待状态更新...');
+                } else {
+                    log(`模拟登录失败: ${result.message}`);
+                }
+                
+            } catch (error) {
+                log(`模拟登录请求失败: ${error.message}`);
+            }
+        }
+
+        async function simulateCallback() {
+            if (!currentSessionId) {
+                alert('请先生成二维码');
+                return;
+            }
+
+            // 从二维码URL中提取场景值
+            const qrImage = document.getElementById('qr-image');
+            if (!qrImage.src) {
+                alert('请先生成二维码');
+                return;
+            }
+
+            try {
+                // 从当前会话获取场景值
+                const sessionResponse = await fetch(`${API_BASE}/auth/wechat/status/${currentSessionId}`);
+                const sessionResult = await sessionResponse.json();
+                
+                if (!sessionResult.success) {
+                    log(`获取会话信息失败: ${sessionResult.message}`);
+                    return;
+                }
+
+                log('模拟微信回调（新方式）...');
+                
+                const simulateData = {
+                    qr_scene: currentQRScene, // 使用实际的场景值
+                    openid: 'callback_test_' + Date.now(),
+                    nickname: '微信测试用户',
+                    avatar: 'https://avatar.example.com/test.jpg'
+                };
+
+                const response = await fetch(`${API_BASE}/auth/wechat/debug/simulate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(simulateData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    log(`模拟回调成功: ${JSON.stringify(result.data)}`);
+                } else {
+                    log(`模拟回调失败: ${result.message}`);
+                    
+                    // 如果找不到会话，尝试用当前的二维码数据创建临时会话
+                    if (result.message.includes('未找到')) {
+                        log('尝试使用当前二维码的场景值...');
+                        // 这里可以添加更复杂的逻辑来获取实际的场景值
+                    }
+                }
+                
+            } catch (error) {
+                log(`模拟回调请求失败: ${error.message}`);
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        // 页面加载时的初始化
+        window.onload = function() {
+            log('页面加载完成，可以开始测试微信登录功能');
+            
+            // 检查是否有保存的token
+            const savedToken = localStorage.getItem('wechat_token');
+            if (savedToken) {
+                log(`发现已保存的token: ${savedToken.substring(0, 20)}...`);
+            }
+        };
+
+        // 页面关闭时清理资源
+        window.onbeforeunload = function() {
+            if (websocket) websocket.close();
+            if (pollInterval) clearInterval(pollInterval);
+        };
+    </script>
+</body>
+</html>
