@@ -60,7 +60,7 @@ services:
   #   restart: always
 
   redis:
-    image: redis:7-alpine
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/redis:7.0.14-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -76,7 +76,7 @@ services:
       retries: 5
 
   mysql:
-    image: mysql:8.0
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/gcr.io/ml-pipeline/mysql:8.0.26
     ports:
       - "3306:3306"
     environment:

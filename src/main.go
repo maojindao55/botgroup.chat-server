@@ -96,8 +96,8 @@ func registerRoutes(r *gin.Engine) {
 		//apiGroup.POST("/sendcode", api.SendCodeHandler) // 测试用接口
 		apiGroup.GET("/captcha", api.CaptchaHandler)
 		apiGroup.POST("/captcha/check", api.CaptchaCheckHandler)
-
 		// 微信登录相关接口（无需认证）
+
 		authGroup := apiGroup.Group("/auth")
 		authGroup.Use(middleware.SecurityHeaders()) // 安全头
 		{
@@ -132,7 +132,6 @@ func registerRoutes(r *gin.Engine) {
 
 				// 调试接口（仅开发环境）
 				wechatGroup.GET("/debug/token", api.WechatTokenDebugHandler)
-				wechatGroup.POST("/debug/simulate", api.WechatCallbackSimulateHandler)
 			}
 		}
 
