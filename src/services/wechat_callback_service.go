@@ -63,6 +63,8 @@ func (s *WechatCallbackService) VerifySignature(signature, timestamp, nonce stri
 	h.Write([]byte(str))
 	encrypted := fmt.Sprintf("%x", h.Sum(nil))
 
+	fmt.Println(token, signature, timestamp, nonce, encrypted)
+
 	// 3. 开发者获得加密后的字符串可与signature对比，标识该请求来源于微信
 	return encrypted == signature
 }
