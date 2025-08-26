@@ -244,15 +244,12 @@ func (s *WechatCallbackService) HandleMessage(body io.Reader) (string, error) {
 	switch msg.MsgType {
 	case "event":
 		switch msg.Event {
-		case "subscribe":
-			// 处理关注事件
+		case "subscribe", "SCAN":
+			// 处理关注事件和扫码事件
 			reply, err = s.HandleSubscribeEvent(msg)
 			if err != nil {
-				return "", fmt.Errorf("处理关注事件失败: %v", err)
+				return "", fmt.Errorf("处理事件失败: %v", err)
 			}
-		case "SCAN":
-			// 处理扫码事件（已关注用户扫码）
-			reply = s.createWelcomeReply(msg)
 		default:
 			// 其他事件暂不处理
 			return "success", nil
