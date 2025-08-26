@@ -237,7 +237,7 @@ func (s *WechatCallbackService) HandleMessage(body io.Reader) (string, error) {
 	}
 
 	var reply *WechatReplyMessage
-	fmt.Println("msg.MsgType", msg.MsgType, "msg.Event", msg.Event)
+	fmt.Println("msg.MsgType", msg.MsgType, "msg.Event", msg.Event, "msg.EventKey", msg.EventKey)
 	// 根据消息类型处理
 	switch msg.MsgType {
 	case "event":
