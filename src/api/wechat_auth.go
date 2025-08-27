@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"project/src/config"
 	"project/src/models"
@@ -112,7 +111,6 @@ func handleWechatCallback(c *gin.Context) {
 
 	// 处理消息
 	replyXML, err := callbackService.HandleMessage(body)
-	fmt.Println("replyXML", replyXML)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "处理消息失败: "+err.Error())
 		return

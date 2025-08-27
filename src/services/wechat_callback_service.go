@@ -2,6 +2,7 @@ package services
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -199,6 +200,8 @@ func (s *WechatCallbackService) HandleMessage(body io.Reader) (string, error) {
 	}
 
 	var reply *WechatReplyMessage
+	//打印msg json 格式
+	fmt.Println(json.Marshal(msg))
 	fmt.Println("msg.MsgType", msg.MsgType, "msg.Event", msg.Event, "msg.EventKey", msg.EventKey)
 	// 根据消息类型处理
 	switch msg.MsgType {
