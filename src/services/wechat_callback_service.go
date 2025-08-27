@@ -200,9 +200,25 @@ func (s *WechatCallbackService) HandleMessage(body io.Reader) (string, error) {
 	}
 
 	var reply *WechatReplyMessage
-	//打印msg json 格式
-	fmt.Println(json.Marshal(msg))
-	fmt.Println("msg.MsgType", msg.MsgType, "msg.Event", msg.Event, "msg.EventKey", msg.EventKey)
+
+	// 打印 msg 的完整信息 - JSON 格式
+	if msgJSON, err := json.MarshalIndent(msg, "", "  "); err == nil {
+		fmt.Println("=== 微信消息 JSON 格式 ===")
+		fmt.Println(string(msgJSON))
+	} else {
+		fmt.Printf("JSON 序列化失败: %v\n", err)
+	}
+
+	// 打印 msg 的详细字段信息
+	fmt.Println("=== 微信消息详细字段 ===")
+	fmt.Printf("ToUserName: %s\n", msg.ToUserName)
+	fmt.Printf("FromUserName: %s\n", msg.FromUserName)
+	fmt.Printf("CreateTime: %d\n", msg.CreateTime)
+	fmt.Printf("MsgType: %s\n", msg.MsgType)
+	fmt.Printf("Event: %s\n", msg.Event)
+	fmt.Printf("EventKey: %s\n", msg.EventKey)
+	fmt.Printf("Ticket: %s\n", msg.Ticket)
+	fmt.Println("=========================")
 	// 根据消息类型处理
 	switch msg.MsgType {
 	case "event":
