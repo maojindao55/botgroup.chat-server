@@ -82,16 +82,16 @@ func (s *WechatCallbackService) ParseMessage(body io.Reader) (*WechatMessage, er
 	return &msg, nil
 }
 
-// HandleSubscribeEvent 处理关注事件
+// HandleSubscribeEvent 处理关注事件和扫码事件
 func (s *WechatCallbackService) HandleSubscribeEvent(msg *WechatMessage) (*WechatReplyMessage, error) {
-	// 检查是否是扫码关注事件
-	if !strings.HasPrefix(msg.EventKey, "qr_scene_") {
-		// 普通关注事件，返回欢迎消息
+	// 检查是否有场景值
+	if msg.EventKey == "" {
+		// 普通关注事件，没有场景值，返回欢迎消息
 		return s.createWelcomeReply(msg), nil
 	}
 
-	// 提取场景值（去掉qr_scene_前缀）
-	qrScene := strings.TrimPrefix(msg.EventKey, "qr_scene_")
+	// 直接使用场景值（微信官方不会添加前缀）
+	qrScene := msg.EventKey
 
 	// 验证场景值格式
 	if !s.validateSceneFormat(qrScene) {
