@@ -7,7 +7,6 @@ import (
 	"io"
 	"project/src/config"
 	"project/src/constants"
-	"project/src/models"
 	"sort"
 	"strings"
 	"time"
@@ -127,51 +126,14 @@ func (s *WechatCallbackService) HandleSubscribeEvent(msg *WechatMessage) (*Wecha
 
 // handleUserLogin 处理用户登录逻辑
 func (s *WechatCallbackService) handleUserLogin(openID, qrScene string) (uint, error) {
-	// 查找是否已存在该微信用户
-	existingWechatUser, err := s.findWechatUserByOpenID(openID)
-	if err != nil && err.Error() != "用户不存在" {
-		return 0, fmt.Errorf("查找微信用户失败: %v", err)
-	}
-
-	if existingWechatUser != nil {
-		// 用户已存在，更新最后登录时间和场景值
-		existingWechatUser.LastLoginAt = time.Now()
-		existingWechatUser.QRScene = qrScene
-
-		err = s.updateWechatUser(existingWechatUser)
-		if err != nil {
-			return 0, fmt.Errorf("更新微信用户失败: %v", err)
-		}
-
-		return existingWechatUser.UID, nil
-	}
-
-	// 用户不存在，创建新用户
-	return s.createNewWechatUser(openID, qrScene)
-}
-
-// findWechatUserByOpenID 根据OpenID查找微信用户
-func (s *WechatCallbackService) findWechatUserByOpenID(openID string) (*models.WechatUser, error) {
-	return s.userService.GetWechatUserByOpenID(openID)
-}
-
-// updateWechatUser 更新微信用户信息（已通过UserService的LoginWithWechat实现）
-func (s *WechatCallbackService) updateWechatUser(user *models.WechatUser) error {
-	// 此方法已不需要，逻辑已移动到UserService.LoginWithWechat中
-	_ = user // 防止unused警告
-	return nil
-}
-
-// createNewWechatUser 创建新的微信用户（通过UserService实现）
-func (s *WechatCallbackService) createNewWechatUser(openID, qrScene string) (uint, error) {
-	// 使用UserService的LoginWithWechat方法，它会处理用户创建
-	// 这里需要获取微信用户的详细信息
+	// 统一使用 UserService.LoginWithWechat 处理所有情况
+	// 该方法会自动处理新用户创建和老用户更新
 	nickname := "微信用户" // 可以从微信API获取真实昵称
 	avatarURL := ""    // 可以从微信API获取真实头像
 
 	userData, err := s.userService.LoginWithWechat(openID, nickname, avatarURL, qrScene)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("处理微信用户登录失败: %v", err)
 	}
 
 	return userData.User.ID, nil
