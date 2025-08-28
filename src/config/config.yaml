@@ -21,6 +21,8 @@ redis:
 # JWT密钥配置
 jwt_secret: "your-super-secret-jwt-key-change-this-in-production"  # 将通过环境变量覆盖
 
+auth_access: 1
+
 # Cloudflare配置
 cloudflare:
   account_id: "YOUR_CLOUDFLARE_ACCOUNT_ID"  # 将通过环境变量覆盖

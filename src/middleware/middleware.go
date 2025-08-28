@@ -70,6 +70,11 @@ func Cors() gin.HandlerFunc {
 // AuthMiddleware JWT认证中间件
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 如果auth_access为0，则不进行认证
+		if config.AppConfig.AuthAccess == 0 {
+			c.Next()
+			return
+		}
 		// 获取Authorization头部
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
