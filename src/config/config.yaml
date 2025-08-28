@@ -21,7 +21,11 @@ redis:
 # JWT密钥配置
 jwt_secret: "your-super-secret-jwt-key-change-this-in-production"  # 将通过环境变量覆盖
 
-auth_access: 1
+#是否登录检测
+auth_access: 0
+
+# Chat接口限流配置（匿名用户每日允许调用次数）
+chat_rate_limit: 20
 
 # Cloudflare配置
 cloudflare:

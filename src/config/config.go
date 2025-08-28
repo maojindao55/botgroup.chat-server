@@ -93,6 +93,7 @@ type Config struct {
 	Redis           RedisConfig            `mapstructure:"redis" json:"redis"`
 	JWTSecret       string                 `mapstructure:"jwt_secret" json:"jwt_secret"`
 	AuthAccess      int                    `mapstructure:"auth_access" json:"auth_access"`
+	ChatRateLimit   int                    `mapstructure:"chat_rate_limit" json:"chat_rate_limit"`
 	Cloudflare      CloudflareConfig       `mapstructure:"cloudflare" json:"cloudflare"`
 	Wechat          WechatConfig           `mapstructure:"wechat" json:"wechat"`
 	WebSocket       WebSocketConfig        `mapstructure:"websocket" json:"websocket"`
@@ -144,6 +145,9 @@ func LoadConfig() {
 
 	//是否登录检测
 	viper.BindEnv("auth_access", "AUTH_ACCESS")
+
+	//Chat接口限流配置
+	viper.BindEnv("chat_rate_limit", "CHAT_RATE_LIMIT")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

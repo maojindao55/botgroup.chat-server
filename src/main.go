@@ -134,18 +134,16 @@ func registerRoutes(r *gin.Engine) {
 				wechatGroup.GET("/debug/token", api.WechatTokenDebugHandler)
 			}
 		}
-		// // 初始化接口
-		// apiGroup.GET("/init", api.InitHandler)
-		// // 聊天相关接口
-		// apiGroup.POST("/chat", api.ChatHandler)
+		// 匿名Chat接口（带限流）
+		apiGroup.GET("/init", middleware.ChatRateLimitMiddleware(), api.InitHandler)
+		apiGroup.POST("/chat", middleware.ChatRateLimitMiddleware(), api.ChatHandler)
+
 		// 需要认证的用户接口
 		userGroup := apiGroup.Group("/")
 		userGroup.Use(middleware.AuthMiddleware())
 		{
-			// 初始化接口
-			userGroup.GET("/init", api.InitHandler)
-			// 聊天相关接口
-			userGroup.POST("/chat", api.ChatHandler)
+			// // 初始化接口
+			// userGroup.GET("/init", api.InitHandler)
 			// 调度相关接口
 			userGroup.POST("/scheduler", api.SchedulerHandler)
 			// 用户相关接口
