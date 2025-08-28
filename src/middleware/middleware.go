@@ -123,10 +123,25 @@ func AuthMiddleware() gin.HandlerFunc {
 // 允许匿名用户每个IP每天调用指定次数的chat接口，超过后要求登录
 func ChatRateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 如果已经有用户信息（已登录），直接跳过限流检查
-		if _, exists := c.Get("user"); exists || config.AppConfig.AuthAccess == 0 {
+		// 如果全局关闭认证，直接跳过
+		if config.AppConfig.AuthAccess == 0 {
 			c.Next()
 			return
+		}
+
+		// 检查是否提供了有效的JWT token
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			// 有token，尝试验证
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+			userService := services.NewUserService(config.AppConfig.JWTSecret, config.AppConfig.Redis)
+			if user, err := userService.ValidateToken(token); err == nil {
+				// token有效，用户已登录，跳过限流
+				c.Set("user", user)
+				c.Next()
+				return
+			}
+			// token无效，继续执行限流逻辑
 		}
 
 		// 获取客户端真实IP（考虑反向代理）
