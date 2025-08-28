@@ -209,16 +209,6 @@ func (s *WechatCallbackService) HandleMessage(body io.Reader) (string, error) {
 		fmt.Printf("JSON 序列化失败: %v\n", err)
 	}
 
-	// 打印 msg 的详细字段信息
-	fmt.Println("=== 微信消息详细字段 ===")
-	fmt.Printf("ToUserName: %s\n", msg.ToUserName)
-	fmt.Printf("FromUserName: %s\n", msg.FromUserName)
-	fmt.Printf("CreateTime: %d\n", msg.CreateTime)
-	fmt.Printf("MsgType: %s\n", msg.MsgType)
-	fmt.Printf("Event: %s\n", msg.Event)
-	fmt.Printf("EventKey: %s\n", msg.EventKey)
-	fmt.Printf("Ticket: %s\n", msg.Ticket)
-	fmt.Println("=========================")
 	// 根据消息类型处理
 	switch msg.MsgType {
 	case "event":
@@ -227,7 +217,9 @@ func (s *WechatCallbackService) HandleMessage(body io.Reader) (string, error) {
 			// 处理关注事件和扫码事件
 			reply, err = s.HandleSubscribeEvent(msg)
 			if err != nil {
-				return "", fmt.Errorf("处理事件失败: %v", err)
+				// 记录错误但返回友好的回复消息，避免微信重试
+				fmt.Printf("处理扫码事件失败: %v\n", err)
+				reply = s.createErrorReply(msg, "服务暂时不可用，请稍后重试")
 			}
 		default:
 			// 其他事件暂不处理

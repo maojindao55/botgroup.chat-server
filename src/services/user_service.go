@@ -103,7 +103,7 @@ func (s *userService) Login(phone, code string) (*models.UserData, error) {
 	if err != nil {
 		// 用户不存在，创建新用户
 		nickname := fmt.Sprintf("用户%s", phone[7:]) // 使用手机号后4位作为昵称
-		user, err = s.userRepo.CreateUser(phone, nickname)
+		user, err = s.userRepo.CreateUser(phone, "", nickname)
 		if err != nil {
 			return nil, fmt.Errorf("创建用户失败: %v", err)
 		}
@@ -328,53 +328,40 @@ func (s *userService) generateSignature(data string) (string, error) {
 
 // LoginWithWechat 微信登录
 func (s *userService) LoginWithWechat(openID, nickname, avatarURL, qrScene string) (*models.UserData, error) {
-	// 1. 查找是否已存在该微信用户
-	wechatUser, err := s.wechatUserRepo.GetWechatUserByOpenID(openID)
-	if err != nil {
-		return nil, fmt.Errorf("查找微信用户失败: %v", err)
+	// 1. 查找是否已存在该用户（通过 OpenID）
+	user, err := s.userRepo.GetUserByOpenID(openID)
+	if err != nil && err.Error() != "user not found" {
+		return nil, fmt.Errorf("查找用户失败: %v", err)
 	}
 
-	var user *models.User
-
-	if wechatUser != nil {
-		// 用户已存在，获取关联的基础用户信息
-		user, err = s.userRepo.GetUserByID(wechatUser.UID)
-		if err != nil {
-			return nil, fmt.Errorf("获取用户信息失败: %v", err)
+	if user != nil {
+		// 用户已存在，更新用户信息
+		if user.Nickname != nickname {
+			err = s.userRepo.UpdateUserNickname(user.ID, nickname)
+			if err != nil {
+				return nil, fmt.Errorf("更新用户昵称失败: %v", err)
+			}
+			user.Nickname = nickname
 		}
 
-		// 更新微信用户信息
-		wechatUser.Nickname = nickname
-		wechatUser.AvatarURL = avatarURL
-		wechatUser.QRScene = qrScene
-		wechatUser.LastLoginAt = time.Now()
+		if avatarURL != "" && user.AvatarURL != avatarURL {
+			err = s.userRepo.UpdateUserAvatar(user.ID, avatarURL)
+			if err != nil {
+				return nil, fmt.Errorf("更新用户头像失败: %v", err)
+			}
+			user.AvatarURL = avatarURL
+		}
 
-		err = s.wechatUserRepo.UpdateWechatUser(wechatUser)
+		// 更新最后登录时间
+		err = s.userRepo.UpdateLastLoginTime(user.ID)
 		if err != nil {
-			return nil, fmt.Errorf("更新微信用户信息失败: %v", err)
+			return nil, fmt.Errorf("更新最后登录时间失败: %v", err)
 		}
 	} else {
 		// 用户不存在，创建新用户
-		// 首先创建基础用户
-		user, err = s.userRepo.CreateUser("", nickname) // 微信用户没有手机号
+		user, err = s.userRepo.CreateUser("", openID, nickname) // 微信用户phone为空
 		if err != nil {
 			return nil, fmt.Errorf("创建基础用户失败: %v", err)
-		}
-
-		// 创建微信用户记录
-		wechatUser = &models.WechatUser{
-			UID:           user.ID,
-			OpenID:        openID,
-			Nickname:      nickname,
-			AvatarURL:     avatarURL,
-			QRScene:       qrScene,
-			SubscribeTime: time.Now(),
-			LastLoginAt:   time.Now(),
-		}
-
-		err = s.wechatUserRepo.CreateWechatUser(wechatUser)
-		if err != nil {
-			return nil, fmt.Errorf("创建微信用户失败: %v", err)
 		}
 	}
 

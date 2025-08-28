@@ -12,7 +12,8 @@ import (
 // User 用户模型
 type User struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
-	Phone       string    `json:"phone" gorm:"uniqueIndex;size:11;not null;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
+	Phone       string    `json:"phone" gorm:"size:11;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
+	OpenID      *string   `json:"openid" gorm:"column:openid;uniqueIndex;size:100;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
 	Nickname    string    `json:"nickname" gorm:"size:50;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
 	AvatarURL   string    `json:"avatar_url" gorm:"column:avatar_url;type:text;charset:utf8mb4;collation:utf8mb4_unicode_ci"`
 	Status      int       `json:"status" gorm:"default:1"`
