@@ -335,23 +335,6 @@ func (s *userService) LoginWithWechat(openID, nickname, avatarURL, qrScene strin
 	}
 
 	if user != nil {
-		// 用户已存在，更新用户信息
-		// if user.Nickname != nickname {
-		// 	err = s.userRepo.UpdateUserNickname(user.ID, nickname)
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("更新用户昵称失败: %v", err)
-		// 	}
-		// 	user.Nickname = nickname
-		// }
-
-		// if avatarURL != "" && user.AvatarURL != avatarURL {
-		// 	err = s.userRepo.UpdateUserAvatar(user.ID, avatarURL)
-		// 	if err != nil {
-		// 		return nil, fmt.Errorf("更新用户头像失败: %v", err)
-		// 	}
-		// 	user.AvatarURL = avatarURL
-		// }
-
 		// 更新最后登录时间
 		err = s.userRepo.UpdateLastLoginTime(user.ID)
 		if err != nil {

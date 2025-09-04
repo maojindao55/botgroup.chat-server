@@ -151,6 +151,27 @@ func registerRoutes(r *gin.Engine) {
 			userGroup.POST("/user/update", api.UserUpdateHandler)
 			// 上传相关接口
 			userGroup.POST("/user/upload", api.UploadHandler)
+
+			// 群组管理接口
+			groupsGroup := userGroup.Group("/groups")
+			{
+				groupsGroup.POST("/", api.CreateGroupHandler)                       // 创建群组
+				groupsGroup.GET("/", api.GetGroupsHandler)                          // 获取群组列表
+				groupsGroup.GET("/:id", api.GetGroupHandler)                        // 获取单个群组详情
+				groupsGroup.PUT("/:id", api.UpdateGroupHandler)                     // 更新群组
+				groupsGroup.DELETE("/:id", api.DeleteGroupHandler)                  // 删除群组
+				groupsGroup.GET("/:id/characters", api.GetCharactersByGroupHandler) // 获取群组下的角色列表
+			}
+
+			// 角色管理接口
+			charactersGroup := userGroup.Group("/characters")
+			{
+				charactersGroup.POST("/", api.CreateCharacterHandler)      // 创建角色
+				charactersGroup.GET("/", api.GetCharactersHandler)         // 获取角色列表
+				charactersGroup.GET("/:id", api.GetCharacterHandler)       // 获取单个角色详情
+				charactersGroup.PUT("/:id", api.UpdateCharacterHandler)    // 更新角色
+				charactersGroup.DELETE("/:id", api.DeleteCharacterHandler) // 删除角色
+			}
 		}
 	}
 
